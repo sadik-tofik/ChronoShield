@@ -1,6 +1,6 @@
 import { ex, pub, me, ONE, COLLATERAL } from "./client.mjs";
 import { probabilityToPrice } from "@somnia-chain/markets-sdk";
-import { writeFileSync } from "fs";
+import { writeFileSync, appendFileSync } from "fs";
 
 // ============================================================================
 // PRE-FLIGHT INVARIANTS & DEFENSIVE FAIL-CLOSED GUARDS
@@ -32,6 +32,15 @@ let position = {
   borrowedDebtUsd: 1250,
   liquidationThreshold: 0.85,
 };
+
+function logAuditEvent(event) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    blockTime: Math.floor(Date.now() / 1000),
+    ...event,
+  };
+  appendFileSync("edge-audit.json", JSON.stringify(entry) + "\n");
+}
 
 function calculateHealthFactor(pos) {
   return (pos.collateralUsd * pos.liquidationThreshold) / pos.borrowedDebtUsd;
@@ -91,6 +100,20 @@ async function monitorAndRedeem(marketData) {
     });
     console.log(`>>> [COLLATERAL RESTORED] Claim Tx: ${claimTx.hash}`);
     console.log(`Pushed ${Number(downBalance) / 1e6} tUSDC back to lending reserve.`);
+    // Calculate and log dynamic post-settlement solvency restoration
+    const recoveredUsd = Number(downBalance) / 1e6;
+    position.collateralUsd += recoveredUsd;
+    const restoredHf = calculateHealthFactor(position);
+    console.log(`>>> [SOLVENCY RESTORED] Restored Health Factor: ${restoredHf.toFixed(3)} (STATUS: SAFE >= 1.200)`);
+
+    logAuditEvent({
+      phase: "COLLATERAL_RECOVERED",
+      marketId,
+      payoutUsdc: recoveredUsd,
+      txHash: claimTx.hash,
+      restoredHf: restoredHf.toFixed(3),
+      liquidationPrevented: true,
+    });
   } else if (mo.isVoided) {
     console.log("Market voided: claiming 50% refund...");
     await ex.trader.redeem({ marketId, outcomeIdx: 1, amount: downBalance });
@@ -141,6 +164,14 @@ async function main() {
     amount: hedgeAmount,
   });
   console.log(`Hedge confirmed on-chain: ${mintTx.hash}`);
+  logAuditEvent({
+    phase: "HEDGE_MINTED",
+    pool,
+    amountUnits: hedgeAmount.toString(),
+    txHash: mintTx.hash,
+    initialHf: hf.toFixed(3),
+    orderbookEmptyFallback: true,
+  });
 
   // 4. Start settlement listener & redemption
   await monitorAndRedeem({

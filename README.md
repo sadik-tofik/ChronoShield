@@ -14,7 +14,7 @@
 ### ⚡ Official Submission Hub
 | Artifact | Link / Destination | Verification Scope |
 | :--- | :--- | :--- |
-| **🌐 Live Web Cockpit** | [`http://localhost:5173/`](http://localhost:5173/) *(or staging deployment)* | Interactive Dual-Theme Terminal, 3D Risk Nexus & Shock Simulator |
+| **🌐 Live Web Cockpit** | [`https://chrono-shield.vercel.app/`](https://chrono-shield.vercel.app/) *(or staging deployment)* | Interactive Dual-Theme Terminal, 3D Risk Nexus & Shock Simulator |
 | **📹 Demo Video Walkthrough** | [Watch 3-Minute Protocol Walkthrough (YouTube/Loom)](https://youtu.be/chronoshield-demo) | End-to-end architecture, keeper trigger, on-chain settlement proof |
 | **📜 Verified Shannon Account** | [`0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1`](https://shannon-explorer.somnia.network/address/0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1) | Live Somnia Shannon Testnet Operator (Chain ID: `50312`) |
 | **📦 Codebase Repositories** | Monorepo: [`keeper-engine/`](keeper-engine) & [`web-cockpit/`](web-cockpit) | Production TypeScript Keeper Daemon + React 19 Frontend Suite |
@@ -319,9 +319,9 @@ npm run dev
 ```
 * The terminal will print:
   ```text
-  ➜  Local:   http://localhost:5173/
+  ➜  Local:   https://chrono-shield.vercel.app/
   ```
-* Open **`http://localhost:5173/`** in your browser to interact with the live cockpit:
+* Open **`https://chrono-shield.vercel.app/`** in your browser to interact with the live cockpit:
   * Toggle between **Light Mode** and **Dark Mode** via the Sun/Moon button in the top navigation island.
   * Drag the **Adverse Volatility Shock** slider from `0%` to `-40%` to watch the Health Factor gauge drop and see the Keeper state machine transition from `IDLE` to `EVALUATING` and `HEDGED`.
   * Click **"Connect Wallet"** to connect via MetaMask (Chain 50312), or click **"Auditor 1-Click Bypass"** to test with the verified operator address.
