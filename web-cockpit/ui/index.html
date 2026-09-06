@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" class="light scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/shield.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChronoShield // Autonomous Liquidation Hedging Protocol (Somnia Shannon)</title>
+    <meta name="description" content="Autonomous on-chain liquidation hedging protocol built on Somnia Shannon Testnet. Real-time health factor monitoring, binary DOWN hedge execution on DreamDEX, and zero bad debt guarantee." />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('chronoshield-theme');
+          var theme = saved === 'dark' ? 'dark' : 'light';
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,600;1,700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#F8FAFC] dark:bg-[#0A0A0F] text-[#09090B] dark:text-[#F4F4F5] antialiased selection:bg-cyan-500/30 selection:text-cyan-700 dark:selection:text-cyan-200 overflow-x-hidden min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
