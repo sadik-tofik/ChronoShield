@@ -2,6 +2,31 @@ import { ex, pub, me, ONE, COLLATERAL } from "./client.mjs";
 import { probabilityToPrice } from "@somnia-chain/markets-sdk";
 import { writeFileSync } from "fs";
 
+// ============================================================================
+// PRE-FLIGHT INVARIANTS & DEFENSIVE FAIL-CLOSED GUARDS
+// ============================================================================
+
+// 1. Integer Lot-Math Guard: Snap amount to lot grids (10^6 for 6-decimal tUSDC)
+const LOT_SIZE = 1_000_000n;
+function snapToLotSize(amountUnits) {
+  const bAmount = BigInt(amountUnits);
+  return (bAmount / LOT_SIZE) * LOT_SIZE;
+}
+
+// 2. Fail-Closed Guard: Refuse execution if window has < 30 seconds to lock
+function validateWindowSafety(timeToExpirySec) {
+  if (timeToExpirySec < 30) {
+    throw new Error(
+      `FAIL_CLOSED_REJECT: Market window nearing expiry (${timeToExpirySec}s < 30s). Refusing stale transaction dispatch.`
+    );
+  }
+  return true;
+}
+
+// ============================================================================
+// PORTFOLIO & MARKET EVALUATION
+// ============================================================================
+
 let position = {
   collateralUsd: 2000,
   borrowedDebtUsd: 1250,
@@ -46,11 +71,14 @@ async function monitorAndRedeem(marketData) {
   const winner = Number(mo.winningOutcome); // 0 = UP, 1 = DOWN
   console.log(`Winning Outcome: ${winner === 1 ? "DOWN (Hedge Pays Out!)" : "UP"}`);
 
-  const downBalance = await ex.client.getOutcomeBalance({
+  const rawDownBalance = await ex.client.getOutcomeBalance({
     outcomeToken: mo.outcomeToken,
     account: me,
     id: BigInt(noId),
   });
+
+  // Guard: Sanitize balance through integer lot snapping
+  const downBalance = snapToLotSize(rawDownBalance);
 
   console.log(`Your DOWN Token Balance: ${Number(downBalance) / 1e6}`);
 
@@ -75,13 +103,13 @@ async function main() {
   console.log("=== ChronoShield Autonomous Daemon Initialized ===");
   console.log("Target Operator:", me);
 
-  // 1. Simulate portfolio drop
+  // 1. Evaluate portfolio solvency
   console.log("\n[1/3] Evaluating portfolio health...");
-  position.collateralUsd = 1500;
+  position.collateralUsd = 1500; // Simulated market shock
   const hf = calculateHealthFactor(position);
   console.log(`Health Factor: ${hf.toFixed(3)} [CRITICAL]`);
 
-  // 2. Discover shortest live window
+  // 2. Discover shortest active market window
   console.log("\n[2/3] Querying live testnet markets...");
   const market = await getLiveTradingMarket();
   if (!market) {
@@ -92,18 +120,29 @@ async function main() {
   const pool = market.poolAddress || market.pool;
   const marketOnchain = await ex.client.getMarketOnchain(market.marketId);
 
-  console.log(`Selected Market: ${market.asset || market.symbol} (${pool})`);
-  console.log(`Time to expiry: ${Number(market.expiry) - Math.floor(Date.now() / 1000)}s`);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const timeToExpiry = Number(market.expiry) - nowSec;
 
-  // 3. Execute Down Hedge
-  console.log("\n[3/3] Securing 2 DOWN insurance contracts via mintSet...");
+  // Enforce Fail-Closed Window Safety
+  validateWindowSafety(timeToExpiry);
+  console.log(`✓ Pre-flight safety passed: Window valid for ${timeToExpiry}s`);
+
+  console.log(`Selected Market: ${market.asset || market.symbol} (${pool})`);
+
+  // 3. Execute DOWN Hedge via Guaranteed mintSet Fallback
+  // Compute hedge requirement snapped to integer lot grids
+  const rawHedgeAmount = 2n * ONE;
+  const hedgeAmount = snapToLotSize(rawHedgeAmount);
+  console.log(`✓ Quantized hedge quantity: ${hedgeAmount.toString()} units`);
+
+  console.log("\n[3/3] Securing DOWN insurance contracts via mintSet...");
   const mintTx = await ex.trader.mintSet({
     pool,
-    amount: 2n * ONE,
+    amount: hedgeAmount,
   });
   console.log(`Hedge confirmed on-chain: ${mintTx.hash}`);
 
-  // 4. Start settlement listener
+  // 4. Start settlement listener & redemption
   await monitorAndRedeem({
     marketId: market.marketId,
     pool,
