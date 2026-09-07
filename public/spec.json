@@ -1,0 +1,31 @@
+{
+  "protocol": "ChronoShield",
+  "version": "1.0.0",
+  "network": {
+    "chainName": "Somnia Shannon Testnet",
+    "chainId": 50312,
+    "rpcUrl": "https://dream-rpc.somnia.network",
+    "blockExplorer": "https://shannon-explorer.somnia.network",
+    "targetPool": "0x807cb9b699bf5c1106e5792ad63cbba3eb5c55eb",
+    "collateralToken": "0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E",
+    "operatorAddress": "0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1"
+  },
+  "invariants": {
+    "completeSetConservation": "V(UP) + V(DOWN) == 1.00 USDC",
+    "lotSizeUnits": 1000000,
+    "precisionDecimals": 6,
+    "zeroFloatExecutionHotpath": true
+  },
+  "guards": {
+    "solvencyBreachThresholdHF": 1.150,
+    "liquidationBoundaryHF": 1.000,
+    "failClosedMinExpirySec": 30,
+    "executionStrategy": "IOC_CROSS_THEN_MINTSET_FALLBACK"
+  },
+  "receipts": {
+    "mintSetHedge": "0x69b62efddc95d8c4dd292ad65b60b779b9d3f344fe862fffd5cdc006c9451125",
+    "oracleAttestation": "0x7564912b000000000000000000000000000000000000000000000000000150de",
+    "collateralRedemption": "0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73",
+    "iocFallback": "0x2a3542b9a15c59f4f7d13a3bbfd436fd3aaa90c483aad9340d3b560a9335d44f"
+  }
+}

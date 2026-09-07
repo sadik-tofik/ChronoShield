@@ -18,7 +18,7 @@
 | **🌐 Live Web Cockpit**         | [`https://chrono-shield.vercel.app/`](https://chrono-shield.vercel.app/) _(or staging deployment)_                                         | Interactive Dual-Theme Terminal, 3D Risk Nexus & Shock Simulator   |
 | **📹 Demo Video Walkthrough**   | [Watch 3-Minute Protocol Walkthrough (YouTube/Loom)](https://youtu.be/chronoshield-demo)                                                   | End-to-end architecture, keeper trigger, on-chain settlement proof |
 | **📜 Verified Shannon Account** | [`0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1`](https://shannon-explorer.somnia.network/address/0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1) | Live Somnia Shannon Testnet Operator (Chain ID: `50312`)           |
-| **📦 Codebase Repositories**    | Monorepo: [`keeper-engine/`](keeper-engine) & [`web-cockpit/`](web-cockpit)                                                                | Production TypeScript Keeper Daemon + React 19 Frontend Suite      |
+| **📦 Codebase Repositories**    | [`web-cockpit/`](web-cockpit) (Auditor Terminal UI, TypeScript Keeper Engine, Solidity ABIs)                                               | Production TypeScript Keeper Daemon + React 19 Frontend Suite      |
 
 ---
 
@@ -28,7 +28,7 @@
 
 In collateralized lending protocols (e.g., Aave, Compound, MakerDAO), liquidations represent a catastrophic capital destruction mechanism. When an asset's market price drops sharply, borrower Health Factors ($HF$) collapse below the critical threshold ($HF < 1.00$). External third-party liquidators seize collateral at an enforced **8.0% to 15.0% liquidation penalty**, inflicting severe irreversible losses on borrowers, triggering fire-sale market cascades, and burdening protocols with unbacked bad debt.
 
-Conventional risk management relies on overcollateralization and manual debt repayment. Under extreme network volatility, block congestion and latency prevent borrowers from executing defensive transactions in time.
+Conventional risk management relies on overcollateralization and manual debt repayment. Under extreme network volatility, block congestion and latency prevent borrowers from executing defensive transactions in time. Rather than relying on rigid protocol-specific hooks, ChronoShield monitors loan solvency through a **pluggable lending solvency listener (configured with a canonical $2,000 / $1,250 debt model for testnet evaluation)**.
 
 ### 1.2 The Empirical DreamDEX Problem
 
@@ -47,7 +47,8 @@ $$\text{Liquidity Drought Rate} = \frac{4,175}{5,000} = 83.5\%$$
 
 ChronoShield eliminates dependence on third-party market makers by exploiting the core mathematical property of ERC-6909 binary outcome tokens: **Complete Set Conservation**.
 
-When Health Factor breaches the risk threshold ($HF < 1.150$), ChronoShield's autonomous keeper daemon queries the live DreamDEX CLOB. If the orderbook lacks required depth, the router instantly falls back to **Protocol-Level Complete Set Minting** (`mintSet(pool, quantity)`). By depositing $1.00\text{ tUSDC}$, the protocol atomically mints $1\text{ UP} + 1\text{ DOWN}$ token. ChronoShield secures the exact DOWN protection needed, neutralizes market maker spread, and guarantees **100% fill rate under zero external liquidity**.
+- **Abstracted Lending Solvency Adapter:** ChronoShield implements an autonomous risk listener. For hackathon demonstration and testnet auditing, the debt and collateral parameters are simulated to trigger the adverse boundary ($HF < 1.150$), feeding the execution hot-path which dispatches authenticated `mintSet` and `redeem` transactions directly to Somnia Shannon testnet.
+- **Invariant-Backed Complete Set Minting:** When Health Factor breaches the risk threshold ($HF < 1.150$), ChronoShield's autonomous keeper daemon queries the live DreamDEX CLOB. If the orderbook lacks required depth, the router instantly falls back to **Protocol-Level Complete Set Minting** (`mintSet(pool, quantity)`). By depositing $1.00\text{ tUSDC}$, the protocol atomically mints $1\text{ UP} + 1\text{ DOWN}$ token. ChronoShield secures the exact DOWN protection needed, neutralizes market maker spread, and guarantees **100% fill rate under zero external liquidity**.
 
 ---
 
@@ -71,10 +72,10 @@ When Health Factor breaches the risk threshold ($HF < 1.150$), ChronoShield's au
  +--------------------------------------------------------------------------------------------------+
                                                  |
                                                  v
-  +---------------------------+    WebSocket     +-----------------------------------------------+
-  |   Lending Pool Monitor    | ---------------> |             Autonomous Keeper Daemon          |
-  |  (Collateral, Debt, HF)   |                  |  - Evaluates Health Factor every block (~100ms)|
-  +---------------------------+                  |  - Triggers defensive state machine at HF<1.15|
+  +---------------------------+   Adapter Feed  +-----------------------------------------------+
+  |  Solvency Risk Adapter    | --------------> |             Autonomous Keeper Daemon          |
+  | (Simulated / Vault Feed)  |                 |  - Evaluates Health Factor every block (~100ms)|
+  +---------------------------+                 |  - Triggers defensive state machine at HF<1.15|
                                                  +-----------------------------------------------+
                                                                          |
                                                                          v
@@ -113,7 +114,7 @@ When Health Factor breaches the risk threshold ($HF < 1.150$), ChronoShield's au
 
 ### Execution Lifecycle Stages
 
-1. **Continuous Telemetry & Invariant Evaluation:** The keeper daemon tracks on-chain borrower state. Health Factor is recalculated dynamically against real-time oracle feeds at Somnia Shannon sub-second finality (~100ms).
+1. **Continuous Telemetry & Invariant Evaluation:** The keeper daemon tracks position solvency via the pluggable **Solvency Risk Adapter**. Health Factor is recalculated dynamically against parameterized loan state and real-time oracle feeds at Somnia Shannon sub-second finality (~100ms).
 2. **Deterministic Risk State Machine:**
    - `IDLE` ($HF \ge 1.200$): Position safe. Telemetry stream monitored.
    - `EVALUATING` ($1.000 \le HF < 1.150$): Downside probability threshold breached. Live binary market windows identified.
@@ -260,47 +261,31 @@ The ChronoShield Web Cockpit is an institutional-grade financial monitoring term
 
 ```text
 chronoshield/
-├── keeper-engine/                   # Core autonomous keeper daemon monorepo
-│   ├── packages/
-│   │   ├── core-py/                 # DreamDEX Python core SDK & quantitative primitives
-│   │   ├── ec-core/                 # Event contracts interaction primitives
-│   │   ├── core/                    # Low-latency execution pipelines
-│   │   └── backtest/                # Liquidity & volatility simulation tools
-│   ├── examples/                    # Empirical market analysis, telemetry & venue probes
-│   ├── strategies/                  # Baseline market-making & comparative execution scripts
-│   ├── scripts/                     # Operational entrypoints & diagnostics
-│   │   ├── ec-doctor.ts             # Testnet environment & RPC diagnostic
-│   │   ├── operator-setup.ts        # Faucet funding & token approvals
-│   │   └── quickstart.mjs           # Quick verification runner
-│   ├── Dockerfile                   # Production headless container
-│   └── package.json
-│
-├── web-cockpit/                     # Front-end command deck & execution tools
-│   ├── ui/                          # Production Web Cockpit Dashboard (React 19 + Vite)
+├── web-cockpit/
+│   ├── ui/                          # Reactive Auditor Terminal (React 19, Tailwind v4, Lucide)
 │   │   ├── src/
-│   │   │   ├── App.jsx              # Unified reactive cockpit interface & live block poller
-│   │   │   ├── index.css            # Design tokens & Tailwind v4 custom variants
-│   │   │   ├── main.jsx             # React DOM bootstrap
-│   │   │   └── utils/
-│   │   │       └── audio.js         # Synthesized Web Audio sound fx engine
-│   │   ├── index.html               # Entry HTML with typography preloading
-│   │   ├── vite.config.js           # Vite configuration with Tailwind v4 plugin
+│   │   │   ├── App.jsx              # Cockpit terminal, live Shannon RPC poller, risk gauge
+│   │   │   ├── index.css            # Design tokens & responsive styles
+│   │   │   ├── main.jsx             # React DOM entry
+│   │   │   └── utils/audio.js       # Synthesized Web Audio feedback engine
+│   │   ├── index.html
+│   │   ├── vite.config.js
 │   │   └── package.json
 │   │
-│   ├── typescript/                  # Verified Shannon testnet standalone scripts
+│   ├── typescript/                  # Autonomous Keeper Daemon & DreamDEX Execution Engine
 │   │   ├── src/
-│   │   │   ├── client.mjs           # Somnia SDK client & wallet initializers
-│   │   │   ├── keeper-daemon.mjs    # Autonomous evaluation, mintSet & claim loop
-│   │   │   ├── claim-hedge.mjs      # Dedicated oracle finalization claimer
-│   │   │   ├── check-balance.mjs    # STT, tUSDC, and ERC-6909 token balance auditor
-│   │   │   ├── discover-fast.mjs    # Fast binary pool discovery utility
-│   │   │   └── inspect-tusdc.mjs    # Collateral allowance & balance verifier
-│   │   ├── market.json              # Canonical target pool metadata
+│   │   │   ├── client.mjs           # Somnia SDK client & wallet credentials
+│   │   │   ├── keeper-daemon.mjs    # State machine: Solvency evaluation -> mintSet -> redeem
+│   │   │   ├── claim-hedge.mjs      # Dedicated oracle finalization redemption runner
+│   │   │   ├── check-balance.mjs    # STT & tUSDC testnet balance verifier
+│   │   │   ├── discover-fast.mjs    # Real-time DreamDEX binary pool discovery
+│   │   │   └── inspect-tusdc.mjs    # Collateral allowance and balance inspector
+│   │   ├── market.json              # Canonical target pool metadata (ETH-5M)
 │   │   └── package.json
 │   │
-│   └── solidity/                    # Protocol interfaces & Foundry setup
+│   └── solidity/                    # Protocol interfaces & ABIs
 │       ├── src/
-│       │   └── IEventContracts.sol  # Complete ABI interface for Somnia DreamDEX
+│       │   └── IEventContracts.sol  # Somnia DreamDEX binary market interface
 │       └── foundry.toml
 │
 ├── public/
