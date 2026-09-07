@@ -189,7 +189,7 @@ To prevent numerical divergence and execution reverts:
 
 To provide absolute audit transparency, all ChronoShield protocol claims, demonstrations, and testnet interactions are categorized using an explicit four-tier verification taxonomy (modeled after institutional audit standards):
 
-- 🟢 **ON-CHAIN VERIFIED:** Direct, cryptographically authenticated transactions executed on Somnia Shannon Testnet (Chain ID: `50312`). Includes immutable Blockscout transaction receipts for `mintSet` hedging, oracle finalization, and payout `redeem()` execution.
+- 🟢 **ON-CHAIN VERIFIED:** Direct, cryptographically authenticated transactions executed on Somnia Shannon Testnet (Chain ID: `50312`). Includes immutable Blockscout transaction receipts for `mintSet` hedging, atomic fallback execution, and payout `redeem()` execution.
 - 🔵 **LIVE RPC VERIFIED:** Real-time state reads queryable directly against Somnia Shannon RPC (`https://dream-rpc.somnia.network`) using `@somnia-chain/markets-sdk`. Includes live DreamDEX market discovery, pool strike checks, and token balance queries (`STT`, `tUSDC`, ERC-6909 outcomes).
 - 🟣 **CODE INVARIANT VERIFIED:** Formally proved mathematical and smart contract invariants. Guarantees 100% Complete Set Conservation ($V(\text{UP}) + V(\text{DOWN}) \equiv 1.00$), integer lot-math ($10^6$ units, zero floating-point divergence), and zero uncollateralized protocol debt.
 - 🟡 **SIMULATED DEMO:** Interactive client-side stress testing instrumentation within the Web Cockpit. Allows judges to sweep adverse market shocks ($0\%$ to $-40\%$) to test borrower solvency curves and observe automated keeper state transitions in real time without waiting for external market volatility.
@@ -198,14 +198,14 @@ To provide absolute audit transparency, all ChronoShield protocol claims, demons
 
 ### 5.1 Authenticated On-Chain Receipts (Shannon Testnet — Chain ID: 50312)
 
-| Verification Level | Artifact / Operation                  | Contract / Address / Tx Hash                                         | Explorer Receipt                                                                                                                    |
+| Verification Level | Artifact / Operation                  | Contract / Address / Tx Hash                                         | Explorer Receipt / Verification Scope                                                                                               |
 | :----------------- | :------------------------------------ | :------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
 | 🟢 **ON-CHAIN**    | **Operator / Deployer Address**       | `0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1`                         | [View Address](https://shannon-explorer.somnia.network/address/0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1)                          |
 | 🔵 **LIVE RPC**    | **Target Binary Pool**                | `0x807cb9b699bf5c1106e5792ad63cbba3eb5c55eb` (ETH-5M)                | [View Pool Contract](https://shannon-explorer.somnia.network/address/0x807cb9b699bf5c1106e5792ad63cbba3eb5c55eb)                    |
 | 🔵 **LIVE RPC**    | **Collateral Token (tUSDC)**          | `0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E`                         | [View Token Contract](https://shannon-explorer.somnia.network/address/0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E)                   |
 | 🔵 **LIVE RPC**    | **Outcome Token Hub (ERC-6909)**      | `0xB52c5934113Af5c0Bb20eb3C72290C8215f755b9`                         | [View Token Hub](https://shannon-explorer.somnia.network/address/0xB52c5934113Af5c0Bb20eb3C72290C8215f755b9)                        |
 | 🟢 **ON-CHAIN**    | **Dual-Layer Hedge Mint (`mintSet`)** | `0x69b62efddc95d8c4dd292ad65b60b779b9d3f344fe862fffd5cdc006c9451125` | [View Mint Tx](https://shannon-explorer.somnia.network/tx/0x69b62efddc95d8c4dd292ad65b60b779b9d3f344fe862fffd5cdc006c9451125)       |
-| 🟢 **ON-CHAIN**    | **Oracle Finalization Event**         | Market `0x...150de` (Outcome 1: DOWN Confirmed)                      | [View Finalization Market](https://shannon-explorer.somnia.network/address/0xf50f7a2D4beaEf6c875F6155a88A1348917c7F9F)              |
+| 🔵 **LIVE RPC**    | **Oracle Settlement State**          | Market ID `0x...150de`                                               | Query: `mo.isResolved == true`, `winningOutcome == 1 (DOWN)`                                                                        |
 | 🟢 **ON-CHAIN**    | **Settlement Redemption (`redeem`)**  | `0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73` | [View Settlement Tx](https://shannon-explorer.somnia.network/tx/0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73) |
 | 🟢 **ON-CHAIN**    | **Dual-Layer Fallback Tx**            | `0x2a3542b9a15c59f4f7d13a3bbfd436fd3aaa90c483aad9340d3b560a9335d44f` | [View Fallback Tx](https://shannon-explorer.somnia.network/tx/0x2a3542b9a15c59f4f7d13a3bbfd436fd3aaa90c483aad9340d3b560a9335d44f)   |
 

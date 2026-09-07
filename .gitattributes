@@ -1,0 +1,3 @@
+keeper-engine/examples/** linguist-vendored
+keeper-engine/packages/core-py/** linguist-vendored
+keeper-engine/strategies/** linguist-vendored

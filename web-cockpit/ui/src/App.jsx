@@ -180,6 +180,69 @@ export default function App() {
   };
 
   // ==========================================
+  // REAL LIVE BALANCE FETCHER (STT + tUSDC)
+  // ==========================================
+  useEffect(() => {
+    let active = true;
+
+    async function fetchLiveBalances() {
+      if (!walletAddress) return;
+      try {
+        // 1. Fetch native STT balance
+        const sttRes = await fetch('https://dream-rpc.somnia.network', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 10,
+            method: 'eth_getBalance',
+            params: [walletAddress, 'latest'],
+          }),
+        });
+        const sttData = await sttRes.json();
+        if (active && sttData?.result) {
+          const sttDec = (parseInt(sttData.result, 16) / 1e18).toFixed(4);
+          setSttBalance(sttDec);
+        }
+
+        // 2. Fetch tUSDC (ERC-20: 0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E) balanceOf
+        // selector: 0x70a08231 + zero-padded 32-byte address
+        const cleanAddr = walletAddress.toLowerCase().replace('0x', '').padStart(64, '0');
+        const usdcRes = await fetch('https://dream-rpc.somnia.network', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 11,
+            method: 'eth_call',
+            params: [
+              {
+                to: '0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E',
+                data: `0x70a08231${cleanAddr}`,
+              },
+              'latest',
+            ],
+          }),
+        });
+        const usdcData = await usdcRes.json();
+        if (active && usdcData?.result && usdcData.result !== '0x') {
+          const usdcDec = (parseInt(usdcData.result, 16) / 1e6).toFixed(3);
+          setUsdcBalance(usdcDec);
+        }
+      } catch (e) {
+        console.warn('Live balance query failed:', e);
+      }
+    }
+
+    fetchLiveBalances();
+    const balanceInterval = setInterval(fetchLiveBalances, 8000);
+    return () => {
+      active = false;
+      clearInterval(balanceInterval);
+    };
+  }, [walletAddress, walletConnected]);
+
+  // ==========================================
   // DOCUMENTATION SLIDE-OVER DRAWER STATE
   // ==========================================
   const [isDocsOpen, setIsDocsOpen] = useState(false);
@@ -422,9 +485,9 @@ export default function App() {
       },
       {
         id: 'tx-2',
-        action: 'Oracle Finalization Attestation',
+        action: 'Oracle Resolution Poller',
         pool: 'Market ID 0x...150de',
-        hash: '0x7564912b000000000000000000000000000000000000000000000000000150de',
+        hash: 'State Query (isResolved == true)',
         amount: 'Outcome 1 (DOWN)',
         blockRef: 'State Finalized',
         status: 'FINALIZED',
@@ -931,7 +994,7 @@ export default function App() {
                 className="w-full py-2.5 rounded-xl font-mono text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Play className="w-3.5 h-3.5 fill-white"/>
-                <span>{isExecutingSimulation ? 'Executing On-Chain Hedge...' : 'Simulate 25% Flash Drop'}</span>
+                <span>{isExecutingSimulation ? 'Simulating Solvency Shock...' : 'Simulate 25% Flash Drop'}</span>
               </button>
               <button
                 onClick={() => {
@@ -1041,28 +1104,34 @@ export default function App() {
                       {log.pool}
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center space-x-2">
-                        <a
-                          href={`https://shannon-explorer.somnia.network/tx/${log.hash}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
-                        >
-                          <span>{log.hash.slice(0, 10)}...{log.hash.slice(-8)}</span>
-                          <ExternalLink className="w-3 h-3"/>
-                        </a>
-                        <button
-                          onClick={() => handleCopy(log.hash)}
-                          title="Copy full hash"
-                          className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
-                        >
-                          {copiedHash === log.hash ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500"/>
-                          ) : (
-                            <Copy className="w-3.5 h-3.5"/>
-                          )}
-                        </button>
-                      </div>
+                      {log.hash.startsWith('0x') ? (
+                        <div className="flex items-center space-x-2">
+                          <a
+                            href={`https://shannon-explorer.somnia.network/tx/${log.hash}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
+                          >
+                            <span>{log.hash.slice(0, 10)}...{log.hash.slice(-8)}</span>
+                            <ExternalLink className="w-3 h-3"/>
+                          </a>
+                          <button
+                            onClick={() => handleCopy(log.hash)}
+                            title="Copy full hash"
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                          >
+                            {copiedHash === log.hash ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500"/>
+                            ) : (
+                              <Copy className="w-3.5 h-3.5"/>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                          {log.hash}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400">
                       {log.amount}
