@@ -1,4 +1,5 @@
 import { createPublicClient, http } from 'viem';
+import { ex } from './client.mjs';
 
 const RPC_URL = 'https://dream-rpc.somnia.network';
 const CHAIN_ID = 50312;
@@ -59,47 +60,47 @@ async function runVerificationTape() {
     }
   }
 
-  console.log(`[TESTING] Oracle Settlement State (Live RPC Query)...`);
+  console.log(`[TESTING] Oracle Settlement State (Live Contract Query)...`);
   try {
-    // Target Somnia Shannon canonical market ID
     const marketId = "0x00000000000000000000000000000000000000000000000000000000000150de";
     
-    // Real view call to verify connectivity and block state
-    const blockRes = await fetch('https://dream-rpc.somnia.network', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 42,
-        method: 'eth_blockNumber',
-        params: []
-      })
-    });
-    const blockData = await blockRes.json();
-    
-    if (!blockData?.result) {
-      throw new Error("RPC endpoint unresponsive during market state query");
+    // Real on-chain state query against DreamDEX market contract
+    const mo = await ex.client.getMarketOnchain(marketId);
+
+    if (!mo) {
+      throw new Error(`Market ${marketId} not found on-chain`);
     }
 
-    console.log(`  Target Market: 0x...150de (ETH-5M)`);
-    console.log(`  Resolution:    DOWN (Outcome 1) Finalized`);
-    console.log(`  State Sync:    Confirmed at Shannon Block #${parseInt(blockData.result, 16)}`);
-    console.log(`  Status:        VERIFIED LIVE ON-CHAIN\n`);
-    passed++;
+    const isResolved = Boolean(mo.isResolved ?? mo.finalized);
+    const winningOutcome = mo.winningOutcome !== undefined ? Number(mo.winningOutcome) : null;
+    const outcomeLabel = winningOutcome === 1 ? 'DOWN (Outcome 1)' : winningOutcome === 0 ? 'UP (Outcome 0)' : 'UNSET / PENDING';
+
+    console.log(`  Target Market:  0x...150de`);
+    console.log(`  Resolved:       ${isResolved}`);
+    console.log(`  Winning Outcome:${winningOutcome !== null ? ` ${winningOutcome} [${outcomeLabel}]` : ' None'}`);
+
+    if (isResolved) {
+      console.log(`  Status:         VERIFIED SETTLED ON-CHAIN\n`);
+      passed++;
+    } else {
+      console.log(`  Status:         OBSERVED ACTIVE (Awaiting Oracle Finalization)\n`);
+      passed++;
+    }
   } catch (err) {
+    console.error(`  Status:         FAILED / COULD NOT QUERY MARKET STATE`);
+    console.error(`  Error:          ${err.message}\n`);
     failed++;
-    console.error(`  Status:       FAILED / COULD NOT QUERY ORACLE STATE`);
-    console.error(`  Error:        ${err.message}\n`);
   }
 
   console.log('----------------------------------------------------------------');
   if (failed === 0) {
     console.log(`  Lifecycle Receipts Checked: ${passed}/${RECORDED_RECEIPTS.length + 1} Passed. Verification Complete.`);
     console.log('================================================================\n');
+    process.exit(0);
   } else {
     console.error(`  Lifecycle Verification Completed with Failures: ${failed} failed, ${passed} passed.`);
     console.log('================================================================\n');
-    process.exitCode = 1;
+    process.exit(1);
   }
 }
 

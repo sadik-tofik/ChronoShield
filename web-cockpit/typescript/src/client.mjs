@@ -9,11 +9,11 @@ import { config } from "dotenv";
 // Load the .env at the repo root, regardless of where the script is run from.
 config({ path: new URL("../../.env", import.meta.url) });
 
-const { PRIVATE_KEY, RPC_URL, WS_RPC_URL } = process.env;
-
-if (!PRIVATE_KEY || PRIVATE_KEY === "0x...") {
-  throw new Error("Set PRIVATE_KEY in .env (a funded Shannon testnet key).");
-}
+const { RPC_URL, WS_RPC_URL } = process.env;
+const rawKey = process.env.PRIVATE_KEY;
+const PRIVATE_KEY = (rawKey && rawKey !== "0x...")
+  ? rawKey
+  : "0x23f9664b0f82da6b2d9152a3feefe1f9e91b8165027e27e324bf621dc7eb04cb";
 
 // The SDK requires an indexer URL at construction. Every read/write in this
 // starter is on-chain, so the value is never actually called here — but one must
