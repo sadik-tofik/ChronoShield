@@ -24,7 +24,13 @@
   },
   "receipts": {
     "mintSetHedge": "0x69b62efddc95d8c4dd292ad65b60b779b9d3f344fe862fffd5cdc006c9451125",
-    "oracleAttestation": "0x7564912b000000000000000000000000000000000000000000000000000150de",
+    "oracleSettlement": {
+      "marketId": "0x00000000000000000000000000000000000000000000000000000000000150de",
+      "outcomeIndex": 1,
+      "outcomeLabel": "DOWN",
+      "isResolved": true,
+      "resolutionMechanism": "State-read polling via Somnia Shannon Pyth Oracle"
+    },
     "collateralRedemption": "0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73",
     "iocFallback": "0x2a3542b9a15c59f4f7d13a3bbfd436fd3aaa90c483aad9340d3b560a9335d44f"
   }
