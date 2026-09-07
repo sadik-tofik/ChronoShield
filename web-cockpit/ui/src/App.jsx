@@ -635,7 +635,19 @@ export default function App() {
           {walletConnected ? (
             <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-mono bg-white dark:bg-zinc-900 border border-emerald-500/40 dark:border-emerald-500/30 text-slate-800 dark:text-zinc-200 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</span>
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                </span>
+                <span className="text-slate-400 dark:text-slate-600">|</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  {sttBalance} STT
+                </span>
+                <span className="text-slate-400 dark:text-slate-600">·</span>
+                <span className="text-cyan-600 dark:text-cyan-400 font-medium">
+                  {usdcBalance} tUSDC
+                </span>
+              </div>
               <button 
                 onClick={disconnectWallet}
                 title="Disconnect" 
