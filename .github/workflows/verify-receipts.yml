@@ -23,6 +23,11 @@ jobs:
         working-directory: web-cockpit/typescript
         run: npm ci || npm install
 
+      - name: Run Invariant & Unit Tests
+        working-directory: web-cockpit/typescript
+        run: npm test
+
       - name: Run Receipt Verification Tape
         working-directory: web-cockpit/typescript
         run: node src/verify-receipts.mjs
+

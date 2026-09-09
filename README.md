@@ -1,10 +1,31 @@
 # ChronoShield: Autonomous Lending Guardian on Somnia
 
-![Verify On-Chain Tape](https://github.com/sadik-tofik/chronoshield/actions/workflows/verify-receipts.yml/badge.svg)
+[![Verify On-Chain Tape](https://github.com/sadik-tofik/chronoshield/actions/workflows/verify-receipts.yml/badge.svg)](https://github.com/sadik-tofik/chronoshield/actions/workflows/verify-receipts.yml)
+[![Evidence Ledger](https://img.shields.io/badge/Audit-EVIDENCE.md-blue.svg)](./EVIDENCE.md)
+[![Cryptographic Receipts](https://img.shields.io/badge/Receipts-SHA--256%20Sealed-green.svg)](./receipts/)
 
 > **Deterministic Solvency Protection via DreamDEX Binary Event Markets with Dual-Layer Liquidity Fallback**
 
-ChronoShield bridges on-chain DeFi lending solvency with binary prediction derivatives on Somnia Shannon Testnet. When borrower positions enter the liquidation hazard zone, ChronoShield autonomously executes targeted downside hedges on DreamDEX. If the central limit order book (CLOB) lacks depth during rapid market dislocations, ChronoShield executes protocol-level complete-set minting (`mintSet`), guaranteeing position protection regardless of orderbook drought.
+---
+
+## Live Verification & Evidence Quick Links
+- 📜 **[Canonical Evidence Ledger (EVIDENCE.md)](./EVIDENCE.md)**: Scannable table of all mined transaction hashes, deployed contracts, and proof-of-execution on Somnia Shannon (Chain ID: 50312).
+- 🔏 **[Cryptographic Receipts Folder (/receipts)](./receipts/)**: Individual timestamped execution runs sealed with SHA-256 digests.
+- 🔄 **Automated CI**: Run continuously via GitHub Actions every 12 hours against the live Somnia RPC.
+
+---
+
+## System Architecture: What Is Real vs. Simulated
+
+* 🟢 **LIVE ON-CHAIN (Somnia Shannon Testnet)**:
+  * **Solvency Contract**: `MockLendingPosition.sol` ([`0x728b9579edec0e8ef5422f2980c302d5bd266343`](https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343)) runs real storage on-chain.
+  * **DreamDEX Protocol Contracts**: Binary event pools, outcome tokens, settlement vaults.
+  * **Hedge Minting**: Protocol-level `mintSet` locking real testnet tUSDC collateral.
+  * **Collateral Reclamation**: Live on-chain `redeem()` payout to the vault.
+* 🔵 **LIVE OFF-CHAIN DAEMON**:
+  * **Autonomous Keeper**: TypeScript daemon querying health factors, inspecting orderbook depth, and dynamically routing fallback execution.
+* 🟡 **CONTROLLED PARAMETRIC SHOCK**:
+  * **Collateral Shock (`applyShock`)**: Testnet flash crashes simulated via explicit ratio adjustments on the adapter contract to test guardian reaction times.
 
 ---
 
@@ -14,25 +35,6 @@ During high-volatility crashes:
 1. **Haircuts & Penalties**: Collateral positions face 10%–15% liquidation penalties plus auction slippage.
 2. **CLOB Droughts**: Orderbooks in nascent event markets dry up precisely when downside protection is needed most.
 3. **Execution Reverts**: Standard taker keepers placing Immediate-Or-Cancel (IOC) orders fail with `ImmediateOrCancelNoFill`, abandoning the borrower to liquidation.
-
----
-
-## System Architecture: What Is Live vs. Simulated
-
-To guarantee transparency, ChronoShield enforces a strict taxonomy:
-
-* 🟢 **LIVE ON-CHAIN (Somnia Shannon Testnet)**:
-  * **Solvency Contract**: `MockLendingPosition.sol` (`0x728b...6343`) runs live state storage on Somnia Shannon.
-  * **DreamDEX Protocol Contracts**: Binary event pools, outcome token contracts, and core settlement contracts.
-  * **Hedging & Fallback Execution**: All `mintSet`, `approve`, and state-shock calls are broadcast and mined into Somnia blocks.
-  * **Collateral Settlement**: Payout redemption via `redeem()` on settled markets.
-
-* 🔵 **LIVE OFF-CHAIN DAEMON**:
-  * **Keeper Service**: Standalone Viem/Node.js process polling on-chain lending storage and monitoring health factor drift.
-  * **Dynamic Market Discoverer**: Queries DreamDEX binary indexers to select markets with active trading windows.
-
-* 🟡 **CONTROLLED SIMULATION**:
-  * **Market Stressor (`applyShock`)**: Because this is a testnet lending position, market flash-crashes are triggered via contract parameter manipulation (`applyShock(dropPercent)`) rather than waiting for third-party oracle drops.
 
 ---
 

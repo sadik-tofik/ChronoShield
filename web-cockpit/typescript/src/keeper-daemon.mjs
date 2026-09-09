@@ -7,41 +7,14 @@ import { ex } from './client.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const somniaShannon = defineChain({
-  id: 50312,
-  name: 'Somnia Shannon Testnet',
-  nativeCurrency: { name: 'STT', symbol: 'STT', decimals: 18 },
-  rpcUrls: { default: { http: ['https://dream-rpc.somnia.network'] } },
-});
+import {
+  LENDING_ADAPTER_ADDRESS,
+  LIQUIDATION_WARNING_THRESHOLD,
+  USDC_UNIT,
+  fetchOnChainHealthFactor,
+} from './config.mjs';
 
-const publicClient = createPublicClient({
-  chain: somniaShannon,
-  transport: http('https://dream-rpc.somnia.network'),
-});
-
-const LENDING_ADAPTER_ADDRESS = "0x728b9579edec0e8ef5422f2980c302d5bd266343";
-const LIQUIDATION_WARNING_THRESHOLD = 1.150;
-const USDC_UNIT = 1_000_000n;
 const HEDGE_AMOUNT = 2n * USDC_UNIT; // 2 sets ($2 collateral)
-
-const lendingAbi = parseAbi([
-  'function collateralUsd() view returns (uint256)',
-  'function borrowedDebtUsd() view returns (uint256)',
-  'function getHealthFactor() view returns (uint256)'
-]);
-
-async function fetchOnChainHealthFactor() {
-  const [col, debt] = await Promise.all([
-    publicClient.readContract({ address: LENDING_ADAPTER_ADDRESS, abi: lendingAbi, functionName: 'collateralUsd' }),
-    publicClient.readContract({ address: LENDING_ADAPTER_ADDRESS, abi: lendingAbi, functionName: 'borrowedDebtUsd' }),
-  ]);
-
-  if (debt > 0n) {
-    const hfScaled = (col * 8500n * 1000n) / (debt * 10000n);
-    return Number(hfScaled) / 1000;
-  }
-  return 999;
-}
 
 async function checkOrderBookDepth(marketId) {
   try {

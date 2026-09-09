@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Minimal TypeScript starter for DreamDEX Event Contracts on Somnia Shannon testnet.",
   "scripts": {
+    "test": "node --test test/",
     "discover": "tsx src/discover.mjs",
     "lifecycle": "tsx src/lifecycle.mjs",
     "redeem": "tsx src/redeem.mjs",

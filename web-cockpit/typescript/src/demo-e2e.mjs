@@ -9,36 +9,20 @@ import { ex } from './client.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const somniaShannon = defineChain({
-  id: 50312,
-  name: 'Somnia Shannon Testnet',
-  nativeCurrency: { name: 'STT', symbol: 'STT', decimals: 18 },
-  rpcUrls: { default: { http: ['https://dream-rpc.somnia.network'] } },
-});
+import {
+  CHAIN_ID,
+  LENDING_ADAPTER_ADDRESS,
+  lendingAbi,
+  publicClient,
+  getWalletClient,
+  getOperatorAccount,
+  fetchOnChainHealthFactor,
+  USDC_UNIT,
+} from './config.mjs';
 
-const envText = fs.existsSync('.env') ? fs.readFileSync('.env', 'utf8') : '';
-const pkMatch = envText.match(/(?:OPERATOR_PRIVATE_KEY|PRIVATE_KEY)=(0x[a-fA-F0-9]{64}|[a-fA-F0-9]{64})/);
-const rawKey = pkMatch ? pkMatch[1] : process.env.OPERATOR_PRIVATE_KEY;
-const account = privateKeyToAccount(rawKey.startsWith('0x') ? rawKey : `0x${rawKey}`);
-
-const publicClient = createPublicClient({ chain: somniaShannon, transport: http('https://dream-rpc.somnia.network') });
-const walletClient = createWalletClient({ account, chain: somniaShannon, transport: http('https://dream-rpc.somnia.network') });
-
-const LENDING_ADAPTER = "0x728b9579edec0e8ef5422f2980c302d5bd266343";
-const lendingAbi = parseAbi([
-  'function collateralUsd() view returns (uint256)',
-  'function borrowedDebtUsd() view returns (uint256)',
-  'function applyShock(uint256 dropPercent) external',
-  'function resetPosition() external'
-]);
-
-async function getHealthFactor() {
-  const [col, debt] = await Promise.all([
-    publicClient.readContract({ address: LENDING_ADAPTER, abi: lendingAbi, functionName: 'collateralUsd' }),
-    publicClient.readContract({ address: LENDING_ADAPTER, abi: lendingAbi, functionName: 'borrowedDebtUsd' }),
-  ]);
-  return Number((col * 8500n * 1000n) / (debt * 10000n)) / 1000;
-}
+const account = getOperatorAccount();
+const walletClient = getWalletClient();
+const LENDING_ADAPTER = LENDING_ADAPTER_ADDRESS;
 
 console.log("=========================================================================");
 console.log("  CHRONOSHIELD: DETERMINISTIC LIFECYCLE AUDIT PIPELINE");
@@ -53,7 +37,7 @@ const runReceipt = {
 };
 
 // 1. Initial State
-runReceipt.initialHF = (await getHealthFactor()).toFixed(3);
+runReceipt.initialHF = (await fetchOnChainHealthFactor()).toFixed(3);
 console.log(`[1/5] Initial Health Factor: ${runReceipt.initialHF}`);
 
 // 2. Shock
@@ -66,7 +50,7 @@ const shockHash = await walletClient.writeContract({
 });
 await publicClient.waitForTransactionReceipt({ hash: shockHash });
 runReceipt.shockTx = shockHash;
-runReceipt.shockedHF = (await getHealthFactor()).toFixed(3);
+runReceipt.shockedHF = (await fetchOnChainHealthFactor()).toFixed(3);
 console.log(`      Shock Tx:   ${shockHash}`);
 console.log(`      Breach HF:  ${runReceipt.shockedHF}`);
 
@@ -82,7 +66,7 @@ runReceipt.marketId = target.marketId;
 
 const mintTxObj = await ex.trader.mintSet({
   pool: poolAddr,
-  amount: 2_000_000n // 2 complete pairs (6 decimals)
+  amount: 2n * USDC_UNIT // 2 complete pairs (6 decimals)
 });
 const mintTx = mintTxObj?.hash || mintTxObj;
 await publicClient.waitForTransactionReceipt({ hash: mintTx });
@@ -98,7 +82,7 @@ const resetHash = await walletClient.writeContract({
 });
 await publicClient.waitForTransactionReceipt({ hash: resetHash });
 runReceipt.resetTx = resetHash;
-runReceipt.finalHF = (await getHealthFactor()).toFixed(3);
+runReceipt.finalHF = (await fetchOnChainHealthFactor()).toFixed(3);
 console.log(`      Reset Tx:   ${resetHash}`);
 console.log(`      Final HF:   ${runReceipt.finalHF}`);
 
