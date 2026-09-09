@@ -96,15 +96,19 @@ All components are live and verifiable on the Somnia Shannon Testnet:
 chronoshield/
 ├── contracts/
 │   └── MockLendingPosition.sol       # Somnia Shannon borrower solvency adapter
+├── receipts/                         # Cryptographic execution runs (SHA-256 sealed)
 └── web-cockpit/
     └── typescript/
         ├── src/
+        │   ├── config.mjs            # Canonical chain config, contracts, and clients
         │   ├── client.mjs            # Somnia RPC & DreamDEX SDK connection
         │   ├── keeper-daemon.mjs     # Autonomous health factor monitor & hedge engine
         │   ├── shock-position.mjs    # On-chain shock trigger (drops collateral %)
         │   ├── run-live-hedge.mjs    # Dynamic discovery & manual hedge tester
         │   ├── verify-receipts.mjs   # On-chain verification audit tape
         │   └── demo-e2e.mjs          # Single-command end-to-end showcase
+        ├── test/
+        │   └── invariants.test.mjs   # 20+ automated unit & invariant tests
         ├── market.json               # Synced pool and market state
         └── package.json
 ```
@@ -132,12 +136,13 @@ OPERATOR_PRIVATE_KEY=0xYOUR_TESTNET_PRIVATE_KEY
 RPC_URL=https://dream-rpc.somnia.network
 ```
 
-### 3. Verify On-Chain Historical Tape
+### 3. Verify On-Chain Historical Tape & Run Invariant Tests
 
-Audit the deployed contracts and confirmed transactions:
+Audit the deployed contracts and run the 20-test invariant suite:
 
 ```bash
-node src/verify-receipts.mjs
+npm test
+npm run verify
 ```
 
 ### 4. Run the Full End-to-End Showcase
@@ -145,7 +150,7 @@ node src/verify-receipts.mjs
 Execute the complete lifecycle in a single command:
 
 ```bash
-node src/demo-e2e.mjs
+npm run demo
 ```
 
 This automatically runs:
@@ -155,3 +160,14 @@ This automatically runs:
 3. **Hedge Dispatch**: Keeper detects breach, evaluates CLOB depth, and broadcasts complete-set minting on Shannon.
 4. **Restoration**: Calls `resetPosition()` back to baseline collateral.
 5. **Standby Verification**: Confirms the guardian returns to idle monitoring.
+
+---
+
+### Execution Entry Points: Autonomous vs. Manual
+
+ChronoShield provides distinct operational entry points:
+* **`npm run daemon` (`src/keeper-daemon.mjs`) — Autonomous Engine**: Continuously evaluates borrower health factor against `MockLendingPosition.sol`. It only triggers if $HF < 1.150$, inspecting CLOB depth and dynamically selecting between IOC taking or `mintSet` fallback.
+* **`npm run hedge` (`src/run-live-hedge.mjs`) — Manual Operator Tool**: Directly targets the current active DreamDEX market and executes a standalone `mintSet` transaction regardless of borrower state. Used for operator liquidity seeding and quick protocol integration testing.
+* **`npm run demo` (`src/demo-e2e.mjs`) — Complete Audit Showcase**: Runs the automated 5-step lifecycle and writes a SHA-256 cryptographic receipt to `/receipts/`.
+* **`npm run shock` (`src/shock-position.mjs`) — On-Chain Stressor**: Drops borrower collateral by a specified percentage (default 25%) directly on Somnia Shannon.
+

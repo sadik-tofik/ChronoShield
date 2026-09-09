@@ -1,16 +1,4 @@
-import { createPublicClient, http, defineChain, parseAbi } from 'viem';
-
-const somniaShannon = defineChain({
-  id: 50312,
-  name: 'Somnia Shannon Testnet',
-  nativeCurrency: { name: 'STT', symbol: 'STT', decimals: 18 },
-  rpcUrls: { default: { http: ['https://dream-rpc.somnia.network'] } },
-});
-
-const client = createPublicClient({
-  chain: somniaShannon,
-  transport: http('https://dream-rpc.somnia.network'),
-});
+import { publicClient, CONTRACTS, LENDING_ABI, calculateHealthFactor, RPC_URL } from './config.mjs';
 
 const ON_CHAIN_RECEIPTS = [
   {
@@ -20,18 +8,18 @@ const ON_CHAIN_RECEIPTS = [
   },
   {
     name: "On-Chain Solvency Shock",
-    hash: "0xc7e111482eab60359a5d2e93116e5c9c1e7ad07a13ce49f508a348642328b884",
-    expectedAction: "applyShock(25) dropping collateral into liquidation warning",
+    hash: "0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924",
+    expectedAction: "applyShock(25) dropping collateral into liquidation hazard",
   },
   {
     name: "Live Complete-Set Hedge Mint (mintSet)",
-    hash: "0x97b7c35d382c7d36f6563e659790d9c30a121780d77cc66be00611e11331bb47",
-    expectedAction: "Protocol-level mintSet complete pair creation on Pool 0xD5beD0...",
+    hash: "0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6",
+    expectedAction: "Protocol-level mintSet complete pair creation on Pool 0x0957...",
   },
   {
-    name: "Dual-Layer Fallback Mint (Historical Proof)",
-    hash: "0x69b62efddc95d8c4dd292ad65b60b779b9d3f344fe862fffd5cdc006c9451125",
-    expectedAction: "mintSet(pool, quantity) delivering DOWN contracts",
+    name: "Position Restoration (resetPosition)",
+    hash: "0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45",
+    expectedAction: "resetPosition() restoring collateral back to baseline",
   },
   {
     name: "Collateral Reclamation",
@@ -40,17 +28,10 @@ const ON_CHAIN_RECEIPTS = [
   }
 ];
 
-const LENDING_ADAPTER = "0x728b9579edec0e8ef5422f2980c302d5bd266343";
-const lendingAbi = parseAbi([
-  'function collateralUsd() view returns (uint256)',
-  'function borrowedDebtUsd() view returns (uint256)',
-  'function getHealthFactor() view returns (uint256)'
-]);
-
 async function verifyAll() {
   console.log("================================================================");
   console.log("  CHRONOSHIELD: SOMNIA SHANNON ON-CHAIN VERIFICATION TAPE        ");
-  console.log("  RPC: https://dream-rpc.somnia.network | Chain ID: 50312        ");
+  console.log(`  RPC: ${RPC_URL} | Chain ID: 50312        `);
   console.log("================================================================\n");
 
   let passed = 0;
@@ -58,7 +39,7 @@ async function verifyAll() {
   for (const item of ON_CHAIN_RECEIPTS) {
     console.log(`[VERIFYING] ${item.name}...`);
     try {
-      const receipt = await client.getTransactionReceipt({ hash: item.hash });
+      const receipt = await publicClient.getTransactionReceipt({ hash: item.hash });
       const statusText = receipt.status === 'success' ? 'SUCCESS' : 'REVERTED';
       console.log(`  Status:       ${statusText} (Block #${receipt.blockNumber})`);
       console.log(`  Gas Used:     ${receipt.gasUsed} units`);
@@ -73,14 +54,14 @@ async function verifyAll() {
   console.log(`[VERIFYING] Live MockLendingPosition Solvency State...`);
   try {
     const [col, debt] = await Promise.all([
-      client.readContract({ address: LENDING_ADAPTER, abi: lendingAbi, functionName: 'collateralUsd' }),
-      client.readContract({ address: LENDING_ADAPTER, abi: lendingAbi, functionName: 'borrowedDebtUsd' }),
+      publicClient.readContract({ address: CONTRACTS.LENDING_ADAPTER, abi: LENDING_ABI, functionName: 'collateralUsd' }),
+      publicClient.readContract({ address: CONTRACTS.LENDING_ADAPTER, abi: LENDING_ABI, functionName: 'borrowedDebtUsd' }),
     ]);
-    const currentHf = Number((col * 8500n * 1000n) / (debt * 10000n)) / 1000;
-    console.log(`  Contract:     ${LENDING_ADAPTER}`);
+    const currentHf = calculateHealthFactor(col, debt);
+    console.log(`  Contract:     ${CONTRACTS.LENDING_ADAPTER}`);
     console.log(`  Collateral:   $${Number(col) / 1e18} USD`);
     console.log(`  Debt:         $${Number(debt) / 1e18} USD`);
-    console.log(`  Health Factor:${currentHf.toFixed(3)} (Stressed State)`);
+    console.log(`  Health Factor:${currentHf.toFixed(3)}`);
     console.log(`  Status:       VERIFIED ON-CHAIN\n`);
     passed++;
   } catch (err) {
@@ -90,6 +71,15 @@ async function verifyAll() {
   console.log("----------------------------------------------------------------");
   console.log(`  Lifecycle Verifications: ${passed}/${ON_CHAIN_RECEIPTS.length + 1} Passed. Tape Complete.`);
   console.log("================================================================");
+
+  if (passed === ON_CHAIN_RECEIPTS.length + 1) {
+    process.exit(0);
+  } else {
+    process.exit(1);
+  }
 }
 
-verifyAll().catch(console.error);
+verifyAll().catch((err) => {
+  console.error("Verification crashed:", err);
+  process.exit(1);
+});

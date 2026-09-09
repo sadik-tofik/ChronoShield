@@ -36,18 +36,34 @@ export const somniaShannon = defineChain({
   },
 });
 
-export const LENDING_ADAPTER_ADDRESS = '0x728b9579edec0e8ef5422f2980c302d5bd266343';
-export const LIQUIDATION_WARNING_THRESHOLD = 1.150;
-export const LIQUIDATION_THRESHOLD_BPS = 8500n; // 85.00%
-export const BPS_DIVISOR = 10000n;
+export const CONTRACTS = {
+  LENDING_ADAPTER: '0x728b9579edec0e8ef5422f2980c302d5bd266343',
+  TUSDC: '0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E',
+  OUTCOME_HUB: '0xB52c5934113Af5c0Bb20eb3C72290C8215f755b9',
+};
 
-// Decimals & Unit Constants
-export const USDC_DECIMALS = 6;
-export const USDC_UNIT = 1_000_000n; // 10^6 base units
-export const STT_DECIMALS = 18;
-export const STT_UNIT = 1_000_000_000_000_000_000n; // 10^18 base units
+export const CONSTANTS = {
+  LIQUIDATION_WARNING_THRESHOLD: 1.150,
+  LIQUIDATION_THRESHOLD_BPS: 8500n, // 85.00%
+  BPS_DIVISOR: 10000n,
+  USDC_DECIMALS: 6,
+  USDC_UNIT: 1_000_000n, // 10^6 base units
+  HEDGE_COLLATERAL_AMOUNT: 2_000_000n, // 2 complete pairs ($2)
+  STT_DECIMALS: 18,
+  STT_UNIT: 1_000_000_000_000_000_000n,
+};
 
-export const lendingAbi = parseAbi([
+// Aliases for backwards compatibility
+export const LENDING_ADAPTER_ADDRESS = CONTRACTS.LENDING_ADAPTER;
+export const LIQUIDATION_WARNING_THRESHOLD = CONSTANTS.LIQUIDATION_WARNING_THRESHOLD;
+export const LIQUIDATION_THRESHOLD_BPS = CONSTANTS.LIQUIDATION_THRESHOLD_BPS;
+export const BPS_DIVISOR = CONSTANTS.BPS_DIVISOR;
+export const USDC_DECIMALS = CONSTANTS.USDC_DECIMALS;
+export const USDC_UNIT = CONSTANTS.USDC_UNIT;
+export const STT_DECIMALS = CONSTANTS.STT_DECIMALS;
+export const STT_UNIT = CONSTANTS.STT_UNIT;
+
+export const LENDING_ABI = parseAbi([
   'function collateralUsd() view returns (uint256)',
   'function borrowedDebtUsd() view returns (uint256)',
   'function getHealthFactor() view returns (uint256)',
@@ -57,6 +73,7 @@ export const lendingAbi = parseAbi([
   'event CollateralShockApplied(uint256 previousCollateral, uint256 newCollateral, uint256 newHealthFactor)',
   'event CollateralRestored(uint256 restoredCollateral, uint256 newHealthFactor)'
 ]);
+export const lendingAbi = LENDING_ABI;
 
 export function getRawPrivateKey() {
   const envVal = process.env.OPERATOR_PRIVATE_KEY || process.env.PRIVATE_KEY;
@@ -98,21 +115,22 @@ export function getWalletClient() {
  * Pure invariant calculation: Health Factor (HF)
  * HF = (CollateralUsd * ThresholdBps) / (DebtUsd * BpsDivisor)
  */
-export function calculateHealthFactor(collateralUsd, debtUsd, thresholdBps = LIQUIDATION_THRESHOLD_BPS) {
+export function calculateHealthFactor(collateralUsd, debtUsd, thresholdBps = CONSTANTS.LIQUIDATION_THRESHOLD_BPS) {
   const col = BigInt(collateralUsd);
   const debt = BigInt(debtUsd);
-  if (debt === 0n) return Infinity;
-  const scaled = (col * thresholdBps * 1000n) / (debt * BPS_DIVISOR);
+  if (debt === 0n) return 999;
+  if (col === 0n) return 0;
+  const scaled = (col * thresholdBps * 1000n) / (debt * CONSTANTS.BPS_DIVISOR);
   return Number(scaled) / 1000;
 }
 
 /**
  * Queries the on-chain health factor directly from the lending adapter contract
  */
-export async function fetchOnChainHealthFactor(adapterAddress = LENDING_ADAPTER_ADDRESS) {
+export async function fetchOnChainHealthFactor(adapterAddress = CONTRACTS.LENDING_ADAPTER) {
   const [col, debt] = await Promise.all([
-    publicClient.readContract({ address: adapterAddress, abi: lendingAbi, functionName: 'collateralUsd' }),
-    publicClient.readContract({ address: adapterAddress, abi: lendingAbi, functionName: 'borrowedDebtUsd' }),
+    publicClient.readContract({ address: adapterAddress, abi: LENDING_ABI, functionName: 'collateralUsd' }),
+    publicClient.readContract({ address: adapterAddress, abi: LENDING_ABI, functionName: 'borrowedDebtUsd' }),
   ]);
   return calculateHealthFactor(col, debt);
 }

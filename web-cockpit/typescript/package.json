@@ -5,11 +5,15 @@
   "type": "module",
   "description": "Minimal TypeScript starter for DreamDEX Event Contracts on Somnia Shannon testnet.",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.mjs",
+    "demo": "node src/demo-e2e.mjs",
+    "verify": "node src/verify-receipts.mjs",
+    "daemon": "node src/keeper-daemon.mjs",
+    "shock": "node src/shock-position.mjs 25",
+    "hedge": "node src/run-live-hedge.mjs",
     "discover": "tsx src/discover.mjs",
     "lifecycle": "tsx src/lifecycle.mjs",
-    "redeem": "tsx src/redeem.mjs",
-    "verify": "node src/verify-receipts.mjs"
+    "redeem": "tsx src/redeem.mjs"
   },
   "dependencies": {
     "@somnia-chain/markets-sdk": "^0.28.1",
