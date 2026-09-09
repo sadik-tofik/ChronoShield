@@ -1,201 +1,173 @@
-import { ex, pub, me, ONE, COLLATERAL } from "./client.mjs";
-import { probabilityToPrice } from "@somnia-chain/markets-sdk";
-import { writeFileSync, appendFileSync } from "fs";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createPublicClient, http, defineChain, parseAbi, getAddress } from 'viem';
+import { ex } from './client.mjs';
 
-// ============================================================================
-// PRE-FLIGHT INVARIANTS & DEFENSIVE FAIL-CLOSED GUARDS
-// ============================================================================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// 1. Integer Lot-Math Guard: Snap amount to lot grids (10^6 for 6-decimal tUSDC)
-const LOT_SIZE = 1_000_000n;
-function snapToLotSize(amountUnits) {
-  const bAmount = BigInt(amountUnits);
-  return (bAmount / LOT_SIZE) * LOT_SIZE;
-}
+const somniaShannon = defineChain({
+  id: 50312,
+  name: 'Somnia Shannon Testnet',
+  nativeCurrency: { name: 'STT', symbol: 'STT', decimals: 18 },
+  rpcUrls: { default: { http: ['https://dream-rpc.somnia.network'] } },
+});
 
-// 2. Fail-Closed Guard: Refuse execution if window has < 30 seconds to lock
-function validateWindowSafety(timeToExpirySec) {
-  if (timeToExpirySec < 30) {
-    throw new Error(
-      `FAIL_CLOSED_REJECT: Market window nearing expiry (${timeToExpirySec}s < 30s). Refusing stale transaction dispatch.`
-    );
+const publicClient = createPublicClient({
+  chain: somniaShannon,
+  transport: http('https://dream-rpc.somnia.network'),
+});
+
+const LENDING_ADAPTER_ADDRESS = "0x728b9579edec0e8ef5422f2980c302d5bd266343";
+const LIQUIDATION_WARNING_THRESHOLD = 1.150;
+const USDC_UNIT = 1_000_000n;
+const HEDGE_AMOUNT = 2n * USDC_UNIT; // 2 sets ($2 collateral)
+
+const lendingAbi = parseAbi([
+  'function collateralUsd() view returns (uint256)',
+  'function borrowedDebtUsd() view returns (uint256)',
+  'function getHealthFactor() view returns (uint256)'
+]);
+
+async function fetchOnChainHealthFactor() {
+  const [col, debt] = await Promise.all([
+    publicClient.readContract({ address: LENDING_ADAPTER_ADDRESS, abi: lendingAbi, functionName: 'collateralUsd' }),
+    publicClient.readContract({ address: LENDING_ADAPTER_ADDRESS, abi: lendingAbi, functionName: 'borrowedDebtUsd' }),
+  ]);
+
+  if (debt > 0n) {
+    const hfScaled = (col * 8500n * 1000n) / (debt * 10000n);
+    return Number(hfScaled) / 1000;
   }
-  return true;
+  return 999;
 }
 
-// ============================================================================
-// PLUGGABLE SOLVENCY RISK ADAPTER & PORTFOLIO EVALUATION
-// ============================================================================
-
-/**
- * Pluggable Solvency Risk Adapter:
- * Encapsulates upstream debt & collateral parameters. On mainnet, this queries
- * lending pool oracle state (e.g. Aave/Compound vault positions). For testnet
- * auditing, it parameterizes the canonical $2,000 / $1,250 solvency baseline.
- */
-export function getSolvencyState() {
-  return {
-    collateralUsd: 2000,
-    borrowedDebtUsd: 1250,
-    liquidationThreshold: 0.85,
-  };
+async function checkOrderBookDepth(marketId) {
+  try {
+    const ob = await ex.client.fetchOrderBook(marketId);
+    const asks = ob?.asks || [];
+    const bids = ob?.bids || [];
+    return {
+      hasLiquidity: asks.length + bids.length > 0,
+      bidsCount: bids.length,
+      asksCount: asks.length,
+    };
+  } catch {
+    return { hasLiquidity: false, bidsCount: 0, asksCount: 0 };
+  }
 }
 
-let position = getSolvencyState();
+async function runDaemon() {
+  console.log("=========================================================================");
+  console.log("  CHRONOSHIELD AUTONOMOUS LIQUIDATION KEEPER DAEMON");
+  console.log("  Network: Somnia Shannon Testnet (Chain ID: 50312)");
+  console.log(`  Solvency Adapter: ${LENDING_ADAPTER_ADDRESS}`);
+  console.log("=========================================================================\n");
 
-function logAuditEvent(event) {
-  const entry = {
-    timestamp: new Date().toISOString(),
-    blockTime: Math.floor(Date.now() / 1000),
-    ...event,
-  };
-  appendFileSync("edge-audit.json", JSON.stringify(entry) + "\n");
-}
+  console.log("[1/4] Querying borrower solvency state from contract...");
+  const hf = await fetchOnChainHealthFactor();
+  console.log(`      Health Factor:     ${hf.toFixed(3)}`);
+  console.log(`      Safety Threshold:  ${LIQUIDATION_WARNING_THRESHOLD.toFixed(3)}`);
 
-function calculateHealthFactor(pos) {
-  return (pos.collateralUsd * pos.liquidationThreshold) / pos.borrowedDebtUsd;
-}
+  if (hf >= LIQUIDATION_WARNING_THRESHOLD) {
+    console.log(`\n[STATUS] Solvency Healthy (${hf.toFixed(3)} >= ${LIQUIDATION_WARNING_THRESHOLD}).`);
+    console.log("[STATUS] No liquidation risk. Keeper in standby.");
+    return;
+  }
 
-async function getLiveTradingMarket() {
-  const markets = await ex.client.listBinaryMarkets({ limit: 50 });
+  console.log(`\n[ALERT] SOLVENCY BREACH! Current HF: ${hf.toFixed(3)} < ${LIQUIDATION_WARNING_THRESHOLD}`);
+  console.log("[ACTION] Deploying downside hedge on DreamDEX...");
+
+  console.log("\n[2/4] Discovering active binary market on Somnia...");
+  let target = null;
   const now = Math.floor(Date.now() / 1000);
 
-  const live = (markets || []).filter(
-    (m) => m.status === "Trading" && Number(m.expiry || 0) > now + 40
-  );
+  try {
+    const markets = await ex.client.listBinaryMarkets({ limit: 100 });
+    const active = (markets || [])
+      .filter((m) => Number(m.expiry || 0) > now + 30)
+      .sort((a, b) => Number(b.expiry || 0) - Number(a.expiry || 0));
 
-  if (live.length === 0) return null;
-  live.sort((a, b) => Number(a.expiry) - Number(b.expiry));
-  return live[0];
-}
-
-async function monitorAndRedeem(marketData) {
-  const { marketId, pool, noId, outcomeToken, expiry } = marketData;
-  console.log("\n==================================================");
-  console.log("   ChronoShield Payout Settlement Listener        ");
-  console.log("==================================================");
-  console.log(`Tracking Market ID: ${marketId}`);
-  console.log(`Waiting for market window to close and resolve on-chain...`);
-
-  let mo = await ex.client.getMarketOnchain(marketId);
-  while (!mo.finalized && !mo.isResolved && !mo.isVoided) {
-    const now = Math.floor(Date.now() / 1000);
-    const remaining = Number(expiry) - now;
-    process.stdout.write(`Status: ${mo.status} | Expiring in: ${Math.max(0, remaining)}s... \r`);
-    await new Promise((r) => setTimeout(r, 10_000));
-    mo = await ex.client.getMarketOnchain(marketId);
+    if (active.length > 0) {
+      target = active[0];
+    }
+  } catch (err) {
+    console.warn("Indexer query warning:", err.message);
   }
 
-  console.log("\n>>> Market finalized by oracle!");
-  const winner = Number(mo.winningOutcome); // 0 = UP, 1 = DOWN
-  console.log(`Winning Outcome: ${winner === 1 ? "DOWN (Hedge Pays Out!)" : "UP"}`);
+  // Fallback to market.json if indexer scan didn't return a candidate
+  if (!target) {
+    try {
+      const mJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../market.json'), 'utf8'));
+      if (mJson.pool && mJson.marketId) {
+        target = {
+          pool: mJson.pool,
+          marketId: mJson.marketId,
+          expiry: mJson.expiry || now + 300,
+        };
+      }
+    } catch {}
+  }
 
-  const rawDownBalance = await ex.client.getOutcomeBalance({
-    outcomeToken: mo.outcomeToken,
-    account: me,
-    id: BigInt(noId),
-  });
+  if (!target) {
+    console.error("[ERROR] No unexpired market available.");
+    return;
+  }
 
-  // Guard: Sanitize balance through integer lot snapping
-  const downBalance = snapToLotSize(rawDownBalance);
+  const targetPool = getAddress(target.poolAddress || target.pool);
+  const targetMarketId = target.marketId;
+  const minsLeft = Math.max(1, Math.round((Number(target.expiry || now + 60) - now) / 60));
 
-  console.log(`Your DOWN Token Balance: ${Number(downBalance) / 1e6}`);
+  console.log(`      Market ID:         ${targetMarketId}`);
+  console.log(`      Pool Address:      ${targetPool}`);
+  console.log(`      Time Remaining:    ~${minsLeft}m`);
 
-  if (winner === 1 && downBalance > 0n) {
-    console.log("Executing on-chain redemption to recover collateral...");
-    const claimTx = await ex.trader.redeem({
-      marketId,
-      outcomeIdx: 1,
-      amount: downBalance,
-    });
-    console.log(`>>> [COLLATERAL RESTORED] Claim Tx: ${claimTx.hash}`);
-    console.log(`Pushed ${Number(downBalance) / 1e6} tUSDC back to lending reserve.`);
-    // Calculate and log dynamic post-settlement solvency restoration
-    const recoveredUsd = Number(downBalance) / 1e6;
-    position.collateralUsd += recoveredUsd;
-    const restoredHf = calculateHealthFactor(position);
-    console.log(`>>> [SOLVENCY RESTORED] Restored Health Factor: ${restoredHf.toFixed(3)} (STATUS: SAFE >= 1.200)`);
+  fs.writeFileSync(path.join(__dirname, '../market.json'), JSON.stringify({
+    pool: targetPool,
+    marketId: targetMarketId,
+    expiry: target.expiry,
+    updatedAt: new Date().toISOString()
+  }, null, 2));
 
-    logAuditEvent({
-      phase: "COLLATERAL_RECOVERED",
-      marketId,
-      payoutUsdc: recoveredUsd,
-      txHash: claimTx.hash,
-      restoredHf: restoredHf.toFixed(3),
-      liquidationPrevented: true,
-    });
-  } else if (mo.isVoided) {
-    console.log("Market voided: claiming 50% refund...");
-    await ex.trader.redeem({ marketId, outcomeIdx: 1, amount: downBalance });
+  console.log("\n[3/4] Checking orderbook liquidity...");
+  const depth = await checkOrderBookDepth(targetMarketId);
+  console.log(`      CLOB Depth:        ${depth.bidsCount} Bids / ${depth.asksCount} Asks`);
+
+  console.log("\n[4/4] Executing hedge...");
+  if (!depth.hasLiquidity) {
+    console.log("[DROUGHT DETECTED] Orderbook is empty. Executing mintSet complete pair fallback...");
+    try {
+      const mintTx = await ex.trader.mintSet({
+        pool: targetPool,
+        amount: HEDGE_AMOUNT,
+      });
+      const txHash = mintTx?.hash || mintTx;
+      console.log("\n=========================================================================");
+      console.log("  HEDGE EXECUTION CONFIRMED ON SOMNIA SHANNON");
+      console.log("=========================================================================");
+      console.log(`  Mechanism:     Protocol-level mintSet`);
+      console.log(`  Transaction:   ${txHash}`);
+      console.log(`  Explorer:      https://shannon-explorer.somnia.network/tx/${txHash}`);
+      console.log("=========================================================================\n");
+    } catch (mintErr) {
+      console.error(`[EXECUTION FAILED] ${mintErr.message}`);
+    }
   } else {
-    console.log("Market resolved UP. Downside hedge expired out of the money (collateral safe).");
+    console.log("[LIQUIDITY FOUND] Submitting IOC order...");
+    const orderTx = await ex.trader.createOrder({
+      marketId: targetMarketId,
+      outcome: 1,
+      quantity: 2,
+      timeInForce: 'IOC'
+    });
+    console.log(`[ORDER FILLED] Tx: ${orderTx.hash || orderTx}`);
   }
 }
 
-async function main() {
-  console.log("=== ChronoShield Autonomous Daemon Initialized ===");
-  console.log("Target Operator:", me);
-
-  // 1. Evaluate portfolio solvency
-  console.log("\n[1/3] Evaluating portfolio health...");
-  position.collateralUsd = 1500; // Simulated market shock
-  const hf = calculateHealthFactor(position);
-  console.log(`Health Factor: ${hf.toFixed(3)} [CRITICAL]`);
-
-  // 2. Discover shortest active market window
-  console.log("\n[2/3] Querying live testnet markets...");
-  const market = await getLiveTradingMarket();
-  if (!market) {
-    console.log("No trading markets available. Retrying in next cycle.");
-    process.exit(0);
-  }
-
-  const pool = market.poolAddress || market.pool;
-  const marketOnchain = await ex.client.getMarketOnchain(market.marketId);
-
-  const nowSec = Math.floor(Date.now() / 1000);
-  const timeToExpiry = Number(market.expiry) - nowSec;
-
-  // Enforce Fail-Closed Window Safety
-  validateWindowSafety(timeToExpiry);
-  console.log(`✓ Pre-flight safety passed: Window valid for ${timeToExpiry}s`);
-
-  console.log(`Selected Market: ${market.asset || market.symbol} (${pool})`);
-
-  // 3. Execute DOWN Hedge via Guaranteed mintSet Fallback
-  // Compute hedge requirement snapped to integer lot grids
-  const rawHedgeAmount = 2n * ONE;
-  const hedgeAmount = snapToLotSize(rawHedgeAmount);
-  console.log(`✓ Quantized hedge quantity: ${hedgeAmount.toString()} units`);
-
-  console.log("\n[3/3] Securing DOWN insurance contracts via mintSet...");
-  const mintTx = await ex.trader.mintSet({
-    pool,
-    amount: hedgeAmount,
+runDaemon()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
   });
-  console.log(`Hedge confirmed on-chain: ${mintTx.hash}`);
-  logAuditEvent({
-    phase: "HEDGE_MINTED",
-    pool,
-    amountUnits: hedgeAmount.toString(),
-    txHash: mintTx.hash,
-    initialHf: hf.toFixed(3),
-    orderbookEmptyFallback: true,
-  });
-
-  // 4. Start settlement listener & redemption
-  await monitorAndRedeem({
-    marketId: market.marketId,
-    pool,
-    noId: marketOnchain.noId,
-    outcomeToken: marketOnchain.outcomeToken,
-    expiry: market.expiry,
-  });
-
-  process.exit(0);
-}
-
-main().catch((err) => {
-  console.error("Daemon error:", err);
-  process.exit(1);
-});
