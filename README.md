@@ -3,14 +3,27 @@
 [![Verify On-Chain Tape](https://github.com/sadik-tofik/chronoshield/actions/workflows/verify-receipts.yml/badge.svg)](https://github.com/sadik-tofik/chronoshield/actions/workflows/verify-receipts.yml)
 [![Evidence Ledger](https://img.shields.io/badge/Audit-EVIDENCE.md-blue.svg)](./EVIDENCE.md)
 [![Cryptographic Receipts](https://img.shields.io/badge/Receipts-SHA--256%20Sealed-green.svg)](./receipts/)
+[![Developer Feedback](https://img.shields.io/badge/SDK%20Review-FEEDBACK.md-purple.svg)](./FEEDBACK.md)
+[![Developer Docs](https://img.shields.io/badge/Docs-DreamDEX%20Style-cyan.svg)](./docs/index.html)
 
-> **Deterministic Solvency Protection via DreamDEX Binary Event Markets with Dual-Layer Liquidity Fallback**
+> **ChronoShield delivers deterministic DeFi solvency protection by bridging an on-chain lending position adapter with DreamDEX binary event markets on Somnia Shannon, utilizing autonomous dual-layer fallback routing to hedge borrower liquidation risk even during complete orderbook droughts.**
 
 ---
 
-## Live Verification & Evidence Quick Links
+## 📜 Limitations & Architectural Scope
+
+Following the honest disclosure model of top security protocols:
+* **Lending Integration Scope**: ChronoShield models borrower solvency via a purpose-built, on-chain adapter contract (`MockLendingPosition.sol` deployed at [`0x728b9579edec0e8ef5422f2980c302d5bd266343`](https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343)) exposing live storage for collateral, debt, and health factors, rather than directly integrating with a live mainnet Aave or Compound protocol. Flash-crash market conditions are induced via an on-chain `applyShock(percent)` state transition.
+* **Live Execution Primitives**: The entire hedging pipeline—orderbook depth inspection, dynamic market discovery, dual-layer fallback execution, `mintSet` token creation, and collateral payout redemption via `redeem()` on DreamDEX—is **100% live and verified on Somnia Shannon Testnet (Chain ID 50312)**.
+* **Settlement Timing**: Binary outcome tokens resolve when the underlying DreamDEX oracle resolves the market window; downside protection payouts are realized upon market settlement.
+
+---
+
+## 🔗 Live Verification & Evidence Quick Links
 - 📜 **[Canonical Evidence Ledger (EVIDENCE.md)](./EVIDENCE.md)**: Scannable table of all mined transaction hashes, deployed contracts, and proof-of-execution on Somnia Shannon (Chain ID: 50312).
 - 🔏 **[Cryptographic Receipts Folder (/receipts)](./receipts/)**: Individual timestamped execution runs sealed with SHA-256 digests.
+- 💡 **[SDK Developer Feedback (FEEDBACK.md)](./FEEDBACK.md)**: Actionable developer friction points, SDK analysis, and protocol recommendations.
+- 📚 **[DreamDEX-Style Developer Docs (docs/index.html)](./docs/index.html)**: High-fidelity developer documentation hub mirroring DreamDEX event contract specifications.
 - 🔄 **Automated CI**: Run continuously via GitHub Actions every 12 hours against the live Somnia RPC.
 
 ---
@@ -23,7 +36,7 @@
   * **Hedge Minting**: Protocol-level `mintSet` locking real testnet tUSDC collateral.
   * **Collateral Reclamation**: Live on-chain `redeem()` payout to the vault.
 * 🔵 **LIVE OFF-CHAIN DAEMON**:
-  * **Autonomous Keeper**: TypeScript daemon querying health factors, inspecting orderbook depth, and dynamically routing fallback execution.
+  * **Autonomous Keeper**: TypeScript engine querying health factors, inspecting orderbook depth, and dynamically routing fallback execution.
 * 🟡 **CONTROLLED PARAMETRIC SHOCK**:
   * **Collateral Shock (`applyShock`)**: Testnet flash crashes simulated via explicit ratio adjustments on the adapter contract to test guardian reaction times.
 
@@ -76,98 +89,40 @@ During high-volatility crashes:
 
 ---
 
-## Verified Somnia Shannon Testnet Deployments (Chain ID: 50312)
+## Execution Entry Points: Autonomous vs. Manual
 
-All components are live and verifiable on the Somnia Shannon Testnet:
+* **`npm run daemon` (`src/keeper-daemon.mjs`) — Autonomous Engine**: Continuously evaluates borrower health factor against `MockLendingPosition.sol`. It only triggers if $HF < 1.150$, inspecting CLOB depth and dynamically selecting between IOC taking or `mintSet` fallback.
+* **`npm run hedge` (`src/run-live-hedge.mjs`) — Manual Operator Tool**: Directly targets the current active DreamDEX market and executes a standalone `mintSet` transaction regardless of borrower state. Used for operator testing and quick protocol integration checks.
+* **`npm run demo` (`src/demo-e2e.mjs`) — Complete Audit Showcase**: Runs the automated 5-step lifecycle and writes a SHA-256 cryptographic receipt to `/receipts/`.
+* **`npm run verify` (`src/verify-receipts.mjs`) — Verification Harness**: Verifies all on-chain receipts and live contract storage against Somnia Shannon Testnet RPC.
+* **`npm test` (`test/invariants.test.mjs`) — 20 Invariant Test Suite**: Rigorously tests chain configurations, solvency boundaries, math limits, and routing invariants.
+
+---
+
+## Verified Somnia Shannon Testnet Deployments (Chain ID: 50312)
 
 | Component / Action | Address / Transaction Hash | Block | Status |
 | :--- | :--- | :--- | :--- |
 | **Solvency Contract** | [`0x728b9579edec0e8ef5422f2980c302d5bd266343`](https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343) | `#484098396` | 🟢 Verified |
-| **Solvency Shock** | [`0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924`](https://shannon-explorer.somnia.network/tx/0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924) | `#484162912` | 🟢 Confirmed |
+| **Live Solvency Shock** | [`0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924`](https://shannon-explorer.somnia.network/tx/0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924) | `#484162912` | 🟢 Confirmed |
 | **Complete-Set Hedge (`mintSet`)** | [`0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6`](https://shannon-explorer.somnia.network/tx/0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6) | `#484162915` | 🟢 Confirmed |
 | **Position Reset** | [`0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45`](https://shannon-explorer.somnia.network/tx/0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45) | `#484162918` | 🟢 Confirmed |
 | **Collateral Reclamation** | [`0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73`](https://shannon-explorer.somnia.network/tx/0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73) | `#481305363` | 🟢 Confirmed |
 
 ---
 
-## Repository Structure
-
-```
-chronoshield/
-├── contracts/
-│   └── MockLendingPosition.sol       # Somnia Shannon borrower solvency adapter
-├── receipts/                         # Cryptographic execution runs (SHA-256 sealed)
-└── web-cockpit/
-    └── typescript/
-        ├── src/
-        │   ├── config.mjs            # Canonical chain config, contracts, and clients
-        │   ├── client.mjs            # Somnia RPC & DreamDEX SDK connection
-        │   ├── keeper-daemon.mjs     # Autonomous health factor monitor & hedge engine
-        │   ├── shock-position.mjs    # On-chain shock trigger (drops collateral %)
-        │   ├── run-live-hedge.mjs    # Dynamic discovery & manual hedge tester
-        │   ├── verify-receipts.mjs   # On-chain verification audit tape
-        │   └── demo-e2e.mjs          # Single-command end-to-end showcase
-        ├── test/
-        │   └── invariants.test.mjs   # 20+ automated unit & invariant tests
-        ├── market.json               # Synced pool and market state
-        └── package.json
-```
-
----
-
 ## Quickstart & Reproducing the Showcase
 
-### Prerequisites
-- Node.js v20+
-- Private key funded with STT and testnet tUSDC on Somnia Shannon Testnet
-
-### 1. Installation
 ```bash
 cd web-cockpit/typescript
 npm install
-```
 
-### 2. Configure Environment
-
-Create `.env` in `web-cockpit/typescript/`:
-
-```env
-OPERATOR_PRIVATE_KEY=0xYOUR_TESTNET_PRIVATE_KEY
-RPC_URL=https://dream-rpc.somnia.network
-```
-
-### 3. Verify On-Chain Historical Tape & Run Invariant Tests
-
-Audit the deployed contracts and run the 20-test invariant suite:
-
-```bash
+# 1. Run the 20-test unit and invariant suite
 npm test
+
+# 2. Verify all on-chain historical transactions against Somnia Shannon RPC
 npm run verify
-```
 
-### 4. Run the Full End-to-End Showcase
-
-Execute the complete lifecycle in a single command:
-
-```bash
+# 3. Run the automated 5-step live audit showcase
 npm run demo
 ```
-
-This automatically runs:
-
-1. **Health Check**: Confirms initial healthy ratio ($HF = 1.360 \ge 1.150$).
-2. **Stress Shock**: Submits an on-chain transaction cutting collateral by 25% ($HF \to 1.020$).
-3. **Hedge Dispatch**: Keeper detects breach, evaluates CLOB depth, and broadcasts complete-set minting on Shannon.
-4. **Restoration**: Calls `resetPosition()` back to baseline collateral.
-5. **Standby Verification**: Confirms the guardian returns to idle monitoring.
-
----
-
-### Execution Entry Points: Autonomous vs. Manual
-
-ChronoShield provides distinct operational entry points:
-* **`npm run daemon` (`src/keeper-daemon.mjs`) — Autonomous Engine**: Continuously evaluates borrower health factor against `MockLendingPosition.sol`. It only triggers if $HF < 1.150$, inspecting CLOB depth and dynamically selecting between IOC taking or `mintSet` fallback.
-* **`npm run hedge` (`src/run-live-hedge.mjs`) — Manual Operator Tool**: Directly targets the current active DreamDEX market and executes a standalone `mintSet` transaction regardless of borrower state. Used for operator liquidity seeding and quick protocol integration testing.
-* **`npm run demo` (`src/demo-e2e.mjs`) — Complete Audit Showcase**: Runs the automated 5-step lifecycle and writes a SHA-256 cryptographic receipt to `/receipts/`.
-* **`npm run shock` (`src/shock-position.mjs`) — On-Chain Stressor**: Drops borrower collateral by a specified percentage (default 25%) directly on Somnia Shannon.
-

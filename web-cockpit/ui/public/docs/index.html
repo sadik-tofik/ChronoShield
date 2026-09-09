@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChronoShield Developer Documentation | DreamDEX Event Contracts</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              950: '#083344',
+            },
+            doc: {
+              bg: '#080c14',
+              sidebar: '#0b101c',
+              card: '#111827',
+              border: '#1e293b',
+              text: '#94a3b8',
+              heading: '#f8fafc'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #080c14; color: #94a3b8; font-family: 'Plus Jakarta Sans', sans-serif; }
+    code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b101c; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    .toc-active { color: #22d3ee !important; border-left-color: #22d3ee !important; font-weight: 600; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-black">
+
+  <!-- 1. Top Navbar (DreamDEX GitBook Style) -->
+  <header class="sticky top-0 z-50 bg-[#0b101c]/90 backdrop-blur-md border-b border-[#1e293b] px-4 sm:px-8 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <button id="mobile-menu-toggle" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 md:hidden">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold font-mono text-sm shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+          CS
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-white text-base tracking-tight">ChronoShield</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/60 font-semibold">DOCS</span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono hidden sm:inline">DREAMDEX EVENT CONTRACTS</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Center Search Bar Simulation -->
+    <div class="hidden lg:flex items-center w-80 px-3 py-1.5 rounded-lg bg-[#111827] border border-[#1e293b] text-xs font-mono text-slate-400 justify-between cursor-pointer hover:border-slate-700 transition">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <span>Search documentation...</span>
+      </div>
+      <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-300">⌘K</kbd>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-3 text-xs font-mono">
+      <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/40 border border-emerald-800 text-emerald-400 text-[11px]">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>SOMNIA SHANNON (50312)</span>
+      </div>
+
+      <a href="https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343" target="_blank" rel="noreferrer" class="hidden md:inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition">
+        <span>0x728b...6343</span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+
+      <a href="https://github.com/sadik-tofik/ChronoShield" target="_blank" rel="noreferrer" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="View Source on GitHub">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <div class="flex flex-1 max-w-7xl w-full mx-auto">
+    <!-- 2. Left Sidebar (Nested Documentation Hierarchy) -->
+    <aside id="sidebar" class="w-64 border-r border-[#1e293b] bg-[#0b101c]/60 p-6 hidden md:block shrink-0 text-sm overflow-y-auto max-h-[calc(100vh-4rem)] sticky top-16">
+      <div class="space-y-8">
+        <div>
+          <div class="font-bold text-white uppercase tracking-wider text-[11px] text-slate-400 mb-3">
+            Getting Started
+          </div>
+          <ul class="space-y-2 border-l border-slate-800 pl-3">
+            <li><a href="#overview" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">Overview &amp; Purpose</a></li>
+            <li><a href="#quickstart" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">Quickstart &amp; Commands</a></li>
+            <li><a href="#architecture-diagram" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">Architecture Flow</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="font-bold text-white uppercase tracking-wider text-[11px] text-slate-400 mb-3">
+            Developer Integration
+          </div>
+          <ul class="space-y-2 border-l border-slate-800 pl-3">
+            <li><a href="#event-contracts" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">Event Contracts Spec</a></li>
+            <li><a href="#dual-layer" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">Dual-Layer Fallback</a></li>
+            <li><a href="#solvency-adapter" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">MockLendingPosition.sol</a></li>
+            <li><a href="#mintset-math" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">mintSet Invariants</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="font-bold text-white uppercase tracking-wider text-[11px] text-slate-400 mb-3">
+            Verification &amp; Evidence
+          </div>
+          <ul class="space-y-2 border-l border-slate-800 pl-3">
+            <li><a href="#evidence-tape" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">EVIDENCE.md Tape</a></li>
+            <li><a href="#receipts" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">Cryptographic Receipts</a></li>
+            <li><a href="#limitations" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">Limitations &amp; Scope</a></li>
+            <li><a href="#sdk-feedback" class="block text-slate-300 hover:text-cyan-400 transition py-0.5">SDK Feedback (FEEDBACK.md)</a></li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 3. Main Content Area -->
+    <main class="flex-1 p-6 sm:p-10 lg:p-12 max-w-4xl space-y-12 overflow-x-hidden">
+      
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 text-xs font-mono text-slate-400">
+        <a href="#" class="hover:text-white">Developers</a>
+        <span>/</span>
+        <a href="#" class="hover:text-white">Event Contracts</a>
+        <span>/</span>
+        <span class="text-cyan-400">ChronoShield Guardian</span>
+      </nav>
+
+      <!-- Section 1: Overview -->
+      <section id="overview" class="space-y-4">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-400 text-xs font-mono">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span>Somnia Network &amp; DreamDEX Hackathon 2026</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          ChronoShield Developer Guide
+        </h1>
+        <p class="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
+          ChronoShield delivers autonomous, deterministic DeFi solvency protection by bridging an on-chain lending position adapter with DreamDEX binary event prediction markets on the Somnia Shannon Testnet (Chain ID <code class="text-cyan-400 font-mono">50312</code>).
+        </p>
+      </section>
+
+      <!-- Section 2: Architecture Diagram (Image + Interactive SVG) -->
+      <section id="architecture-diagram" class="space-y-4">
+        <div class="flex items-center justify-between border-b border-[#1e293b] pb-2">
+          <h2 class="text-2xl font-bold text-white tracking-tight">System Architecture</h2>
+          <span class="text-xs font-mono text-cyan-400">HUD Visualization</span>
+        </div>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          High-tech overview showing the three core operational nodes: the On-Chain Solvency Adapter, the Autonomous Keeper Decision Engine, and the DreamDEX Binary Event Derivative Layer.
+        </p>
+
+        <!-- Generated High-Tech Architecture Image -->
+        <div class="rounded-2xl overflow-hidden border border-[#1e293b] bg-[#111827] shadow-2xl relative group">
+          <img src="./assets/architecture.png" alt="ChronoShield Architecture Diagram" class="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-300" />
+          <div class="p-3 bg-[#0b101c] border-t border-[#1e293b] flex items-center justify-between text-xs font-mono text-slate-400">
+            <span>Fig 1.1 — ChronoShield Autonomous Dual-Layer Architecture</span>
+            <span class="text-cyan-400">100% On-Chain Live Routing</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Limitations & Honest Scope -->
+      <section id="limitations" class="space-y-4">
+        <h2 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          <span>📜 Limitations &amp; Architectural Scope</span>
+        </h2>
+        <div class="p-5 rounded-2xl bg-[#111827] border border-amber-500/30 text-sm text-slate-300 space-y-3 shadow-lg">
+          <div class="flex items-center gap-2 text-amber-400 font-mono font-semibold text-xs">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span>TRANSPARENT ARCHITECTURAL DISCLOSURE</span>
+          </div>
+          <p class="leading-relaxed">
+            ChronoShield models borrower solvency via a purpose-built, on-chain adapter contract (<code class="text-cyan-300 font-mono">MockLendingPosition.sol</code> deployed at <code class="text-cyan-300 font-mono">0x728b...6343</code>) exposing live state storage for collateral, debt, and health factors, rather than directly integrating with a live mainnet Aave or Compound deployment. Flash-crash market conditions are induced via an on-chain <code class="text-cyan-300 font-mono">applyShock(percent)</code> state transition.
+          </p>
+          <p class="leading-relaxed">
+            However, the downstream hedging and redemption pipeline against DreamDEX—including dynamic binary market lookup, orderbook depth evaluation, <code class="text-cyan-300 font-mono">mintSet</code> complete-set generation, and collateral payout redemption via <code class="text-cyan-300 font-mono">redeem()</code>—is <strong>100% live, automated, and verified on Somnia Shannon Testnet (Chain ID 50312)</strong>.
+          </p>
+        </div>
+      </section>
+
+      <!-- Section 4: Dual-Layer Fallback Routing -->
+      <section id="dual-layer" class="space-y-4">
+        <h2 class="text-2xl font-bold text-white tracking-tight">Dual-Layer Fallback Routing</h2>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          Standard taker bots fail when orderbooks are dry, crashing with <code class="text-rose-400 font-mono">ImmediateOrCancelNoFill</code>. ChronoShield eliminates this failure mode through adaptive routing:
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div class="p-5 rounded-2xl bg-[#111827] border border-[#1e293b] space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-emerald-400">LAYER 1: IOC TAKER</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 border border-emerald-800 text-emerald-300">NORMAL DEPTH</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              When the central limit orderbook has resting limit orders at or below maximum acceptable slippage, the keeper immediately consumes existing depth.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-[#111827] border border-[#1e293b] space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-amber-400">LAYER 2: mintSet FALLBACK</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-950 border border-amber-800 text-amber-300">DROUGHT BYPASS</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              If the orderbook is empty or lacks volume, the keeper bypasses the CLOB entirely and invokes protocol-level complete-set minting, securing downside coverage with 0% slippage.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 5: Contract Specification & Code Tabs -->
+      <section id="solvency-adapter" class="space-y-4">
+        <h2 class="text-2xl font-bold text-white tracking-tight">Solvency Adapter Specification</h2>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          <code class="text-cyan-400 font-mono">MockLendingPosition.sol</code> operates at <a href="https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343" target="_blank" class="underline text-cyan-400">0x728b9579edec0e8ef5422f2980c302d5bd266343</a>.
+        </p>
+
+        <!-- Code Box -->
+        <div class="rounded-2xl border border-[#1e293b] bg-[#111827] overflow-hidden shadow-xl">
+          <div class="bg-[#0b101c] px-4 py-2 border-b border-[#1e293b] flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
+              <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+              <span class="ml-2 text-slate-300 font-semibold">MockLendingPosition.sol</span>
+            </div>
+            <span class="text-[11px] font-mono text-cyan-400">Solidity ^0.8.20</span>
+          </div>
+          <pre class="p-4 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed">
+<span class="text-slate-500">// SPDX-License-Identifier: MIT</span>
+<span class="text-purple-400">pragma solidity</span> ^0.8.20;
+
+<span class="text-purple-400">contract</span> <span class="text-yellow-300">MockLendingPosition</span> {
+    <span class="text-purple-400">uint256</span> <span class="text-purple-400">public</span> collateralUsd = 2000 ether;
+    <span class="text-purple-400">uint256</span> <span class="text-purple-400">public</span> borrowedDebtUsd = 1250 ether;
+    <span class="text-purple-400">uint256</span> <span class="text-purple-400">public constant</span> LIQUIDATION_THRESHOLD_BPS = 8500; <span class="text-slate-500">// 85%</span>
+
+    <span class="text-purple-400">function</span> <span class="text-yellow-300">getHealthFactor</span>() <span class="text-purple-400">external view returns</span> (<span class="text-purple-400">uint256</span>) {
+        <span class="text-purple-400">return</span> (collateralUsd * LIQUIDATION_THRESHOLD_BPS * 1e18) / (borrowedDebtUsd * 10000);
+    }
+
+    <span class="text-purple-400">function</span> <span class="text-yellow-300">applyShock</span>(<span class="text-purple-400">uint256</span> dropPercent) <span class="text-purple-400">external</span> {
+        collateralUsd = (collateralUsd * (100 - dropPercent)) / 100;
+    }
+
+    <span class="text-purple-400">function</span> <span class="text-yellow-300">resetPosition</span>() <span class="text-purple-400">external</span> {
+        collateralUsd = 2000 ether;
+    }
+}</pre>
+        </div>
+      </section>
+
+      <!-- Section 6: Verified Tape Table -->
+      <section id="evidence-tape" class="space-y-4">
+        <div class="flex items-center justify-between border-b border-[#1e293b] pb-2">
+          <h2 class="text-2xl font-bold text-white tracking-tight">On-Chain Verification Tape</h2>
+          <span class="text-xs font-mono text-emerald-400">EVIDENCE.md</span>
+        </div>
+
+        <div class="rounded-2xl border border-[#1e293b] bg-[#111827] overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left font-mono text-xs">
+              <thead>
+                <tr class="bg-[#0b101c] border-b border-[#1e293b] text-slate-400">
+                  <th class="py-3 px-4">Action</th>
+                  <th class="py-3 px-4">Address / Hash</th>
+                  <th class="py-3 px-4">Block</th>
+                  <th class="py-3 px-4">Outcome</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#1e293b] text-slate-300">
+                <tr class="hover:bg-slate-800/30">
+                  <td class="py-3 px-4 font-bold text-white">Solvency Adapter</td>
+                  <td class="py-3 px-4 text-cyan-400"><a href="https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343" target="_blank" class="hover:underline">0x728b...6343</a></td>
+                  <td class="py-3 px-4">#484098396</td>
+                  <td class="py-3 px-4 text-emerald-400">HF 1.360 Initialized</td>
+                </tr>
+                <tr class="hover:bg-slate-800/30">
+                  <td class="py-3 px-4 font-bold text-white">Solvency Shock</td>
+                  <td class="py-3 px-4 text-cyan-400"><a href="https://shannon-explorer.somnia.network/tx/0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924" target="_blank" class="hover:underline">0x8c12...b924</a></td>
+                  <td class="py-3 px-4">#484162912</td>
+                  <td class="py-3 px-4 text-rose-400">HF 1.020 (Hazard Active)</td>
+                </tr>
+                <tr class="hover:bg-slate-800/30">
+                  <td class="py-3 px-4 font-bold text-white">Complete-Set Mint</td>
+                  <td class="py-3 px-4 text-cyan-400"><a href="https://shannon-explorer.somnia.network/tx/0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6" target="_blank" class="hover:underline">0xa476...cec6</a></td>
+                  <td class="py-3 px-4">#484162915</td>
+                  <td class="py-3 px-4 text-emerald-400">+2.000 DOWN Hedge Minted</td>
+                </tr>
+                <tr class="hover:bg-slate-800/30">
+                  <td class="py-3 px-4 font-bold text-white">Position Reset</td>
+                  <td class="py-3 px-4 text-cyan-400"><a href="https://shannon-explorer.somnia.network/tx/0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45" target="_blank" class="hover:underline">0x02ce...1e45</a></td>
+                  <td class="py-3 px-4">#484162918</td>
+                  <td class="py-3 px-4 text-emerald-400">Baseline Restored (1.360)</td>
+                </tr>
+                <tr class="hover:bg-slate-800/30">
+                  <td class="py-3 px-4 font-bold text-white">Collateral Recovery</td>
+                  <td class="py-3 px-4 text-cyan-400"><a href="https://shannon-explorer.somnia.network/tx/0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73" target="_blank" class="hover:underline">0x42b8...7a73</a></td>
+                  <td class="py-3 px-4">#481305363</td>
+                  <td class="py-3 px-4 text-emerald-400">+2.000 tUSDC Recycled</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 7: SDK Feedback Summary -->
+      <section id="sdk-feedback" class="space-y-4">
+        <h2 class="text-2xl font-bold text-white tracking-tight">Somnia Markets SDK Feedback</h2>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          Summary of developer experience feedback submitted in <code class="text-cyan-400 font-mono">FEEDBACK.md</code>:
+        </p>
+
+        <div class="space-y-3 text-xs font-mono">
+          <div class="p-3.5 rounded-xl bg-[#111827] border border-[#1e293b]">
+            <span class="text-amber-400 font-bold">1. Client Lifecycle Cleanup</span>: Expose an explicit <code class="text-slate-200">await ex.disconnect()</code> to release open WebSocket heartbeat timers in Node.js micro-keepers.
+          </div>
+          <div class="p-3.5 rounded-xl bg-[#111827] border border-[#1e293b]">
+            <span class="text-amber-400 font-bold">2. Decimal Precision Enforcement</span>: Enforce 6-decimal typing for testnet <code class="text-slate-200">tUSDC</code> collateral parameters in <code class="text-slate-200">mintSet()</code> to prevent undercollateralized reverts.
+          </div>
+          <div class="p-3.5 rounded-xl bg-[#111827] border border-[#1e293b]">
+            <span class="text-amber-400 font-bold">3. Expired Market Filtering</span>: Add native query parameters (<code class="text-slate-200">status: 'ACTIVE'</code>, <code class="text-slate-200">minTimeRemaining</code>) to <code class="text-slate-200">listBinaryMarkets()</code>.
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#1e293b] bg-[#0b101c] px-6 py-6 text-xs font-mono text-slate-500 text-center space-y-2">
+    <p>ChronoShield Developer Documentation &bull; Built for Somnia DreamDEX Event Contracts Hackathon 2026</p>
+    <p class="text-[11px] text-slate-600">Chain ID 50312 &bull; RPC: https://dream-rpc.somnia.network</p>
+  </footer>
+
+  <script>
+    // Mobile Drawer Toggle
+    const toggleBtn = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    if (toggleBtn && sidebar) {
+      toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('hidden');
+        sidebar.classList.toggle('fixed');
+        sidebar.classList.toggle('inset-y-16');
+        sidebar.classList.toggle('left-0');
+        sidebar.classList.toggle('z-40');
+        sidebar.classList.toggle('w-72');
+      });
+    }
+  </script>
+</body>
+</html>

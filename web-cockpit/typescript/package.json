@@ -11,6 +11,7 @@
     "daemon": "node src/keeper-daemon.mjs",
     "shock": "node src/shock-position.mjs 25",
     "hedge": "node src/run-live-hedge.mjs",
+    "docs": "node -e \"import http from 'http'; import fs from 'fs'; import path from 'path'; http.createServer((req, res) => { const file = path.resolve('../../docs/index.html'); fs.createReadStream(file).pipe(res); }).listen(8080, () => console.log('ChronoShield Docs running at http://localhost:8080'));\"",
     "discover": "tsx src/discover.mjs",
     "lifecycle": "tsx src/lifecycle.mjs",
     "redeem": "tsx src/redeem.mjs"

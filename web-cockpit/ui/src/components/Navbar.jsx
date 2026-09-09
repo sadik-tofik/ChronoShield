@@ -111,16 +111,17 @@ export default function Navbar({
           </button>
 
           {/* Whitepaper Docs Button */}
-          <button
-            onClick={() => {
-              sounds.playClick();
-              onOpenWhitepaper?.();
-            }}
+          <a
+            href="/docs.html"
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => sounds.playClick()}
             className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-white/[0.08] bg-zinc-100/80 hover:bg-zinc-200/70 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:border-cyan-500/40 text-xs font-mono transition-colors cursor-pointer"
+            title="Open DreamDEX-style Developer Documentation"
           >
             <BookOpen className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-            <span>Docs</span>
-          </button>
+            <span>Docs ↗</span>
+          </a>
 
           {/* Wallet Address & Live Balance Pill */}
           {walletConnected ? (

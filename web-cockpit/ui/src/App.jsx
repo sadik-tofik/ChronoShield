@@ -611,16 +611,17 @@ export default function App() {
             {isMuted ? <VolumeX className="w-3.5 h-3.5"/> : <Volume2 className="w-3.5 h-3.5 text-rose-500"/>}
           </button>
 
-          <button
-            onClick={() => {
-              sounds.playClick();
-              setIsDocsOpen(true);
-            }}
+          <a
+            href="/docs.html"
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => sounds.playClick()}
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800 transition-colors cursor-pointer"
+            title="Open DreamDEX-style Developer Documentation"
           >
-            <BookOpen className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400"/>
-            <span className="hidden sm:inline">Docs & Proof</span>
-          </button>
+            <BookOpen className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"/>
+            <span className="hidden sm:inline">Docs ↗</span>
+          </a>
 
           <button
             onClick={toggleTheme}
