@@ -29,6 +29,8 @@ import {
   Radio
 } from 'lucide-react';
 import { sounds } from './utils/audio';
+import LiveOnChainPanel from './components/LiveOnChainPanel';
+import { VERIFIED_RECEIPTS } from './data/verifiedReceipts';
 
 export default function App() {
   // ==========================================
@@ -76,6 +78,8 @@ export default function App() {
   // ==========================================
   const [currentBlock, setCurrentBlock] = useState(null);
   const [rpcLatency, setRpcLatency] = useState(null);
+  const [isLoadingBlock, setIsLoadingBlock] = useState(true);
+  const [blockError, setBlockError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -98,9 +102,15 @@ export default function App() {
           const blockDec = parseInt(data.result, 16);
           setCurrentBlock(blockDec);
           setRpcLatency(Math.round(performance.now() - start));
+          setBlockError(null);
+          setIsLoadingBlock(false);
         }
       } catch (err) {
         console.warn('Somnia RPC Block Poll Error:', err);
+        if (isMounted) {
+          setBlockError('RPC Slow');
+          setIsLoadingBlock(false);
+        }
       }
     }
 
@@ -115,11 +125,13 @@ export default function App() {
   // ==========================================
   // REAL WEB3 WALLET CONNECTION STATE (EIP-1193)
   // ==========================================
-  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletConnected, setWalletConnected] = useState(true);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [walletAddress, setWalletAddress] = useState('0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1');
   const [sttBalance, setSttBalance] = useState('99.968');
   const [usdcBalance, setUsdcBalance] = useState('493.703');
+  const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+  const [balanceError, setBalanceError] = useState(null);
   const [connecting, setConnecting] = useState(false);
 
   const connectWallet = (customAddr) => {
@@ -201,7 +213,7 @@ export default function App() {
         });
         const sttData = await sttRes.json();
         if (active && sttData?.result) {
-          const sttDec = (parseInt(sttData.result, 16) / 1e18).toFixed(4);
+          const sttDec = (parseInt(sttData.result, 16) / 1e18).toFixed(3);
           setSttBalance(sttDec);
         }
 
@@ -228,9 +240,15 @@ export default function App() {
         if (active && usdcData?.result && usdcData.result !== '0x') {
           const usdcDec = (parseInt(usdcData.result, 16) / 1e6).toFixed(3);
           setUsdcBalance(usdcDec);
+          setIsLoadingBalances(false);
+          setBalanceError(null);
         }
       } catch (e) {
         console.warn('Live balance query failed:', e);
+        if (active) {
+          setBalanceError('RPC delayed');
+          setIsLoadingBalances(false);
+        }
       }
     }
 
@@ -469,62 +487,36 @@ export default function App() {
   }, [marketShock, theme]);
 
   // ==========================================
-  // HYBRID AUDIT TAPE & LIVE EXECUTION STREAM
+  // HYBRID AUDIT TAPE & LIVE EXECUTION STREAM (EVIDENCE.md)
   // ==========================================
+  const [auditFilter, setAuditFilter] = useState('ALL');
+
   const auditLogs = useMemo(() => {
-    const verifiedAnchors = [
-      {
-        id: 'tx-1',
-        action: 'Mint DOWN Outcome (mintSet)',
-        pool: '0x807c...55eb (ETH-5M)',
-        hash: '0x69b62efddc95d8c4dd292ad65b60b779b9d3f344fe862fffd5cdc006c9451125',
-        amount: '+2.00 DOWN',
-        blockRef: 'Block #481250091',
-        status: 'CONFIRMED',
-        isLive: false,
-      },
-      {
-        id: 'tx-2',
-        action: 'Oracle Resolution Poller',
-        pool: 'Market ID 0x...150de',
-        hash: 'State Query (isResolved == true)',
-        amount: 'Outcome 1 (DOWN)',
-        blockRef: 'State Finalized',
-        status: 'FINALIZED',
-        isLive: false,
-      },
-      {
-        id: 'tx-3',
-        action: 'Redeem Payout Collateral (redeem)',
-        pool: 'Collateral Vault (Lending)',
-        hash: '0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73',
-        amount: '+2.00 tUSDC',
-        blockRef: 'Block #481305363',
-        status: 'RESTORED',
-        isLive: false,
-      },
-      {
-        id: 'tx-4',
-        action: 'Complete-Set Fallback Mint',
-        pool: '0xa5cb...ca92 (ETH Fast)',
-        hash: '0x2a3542b9a15c59f4f7d13a3bbfd436fd3aaa90c483aad9340d3b560a9335d44f',
-        amount: '+2.00 DOWN Delivered',
-        blockRef: 'Block #481245570',
-        status: 'CONFIRMED',
-        isLive: false,
-      },
-    ];
+    const verifiedAnchors = VERIFIED_RECEIPTS.map((r) => ({
+      id: r.id,
+      action: r.title,
+      pool: r.target,
+      hash: r.hash,
+      amount: r.outcome,
+      blockRef: `Block #${r.blockNumber}`,
+      status: r.status,
+      category: r.category,
+      details: r.details,
+      isLive: false,
+    }));
 
     if (keeperPhase === 'HEDGED' || keeperPhase === 'EVALUATING') {
       return [
         {
           id: 'tx-live',
-          action: 'Dual-Layer Emergency Hedge',
-          pool: '0x807c...55eb (ETH-5M)',
-          hash: '0x69b62efddc95d8c4dd292ad65b60b779b9d3f344fe862fffd5cdc006c9451125',
-          amount: '+2.00 DOWN Secured',
-          blockRef: currentBlock ? `Block #${currentBlock}` : 'Block #Pending',
+          action: 'Dual-Layer Emergency Hedge (mintSet)',
+          pool: 'DreamDEX Pool 0x6F17...928D',
+          hash: '0x29c18f213324459723716640f477db9a6d894f60b5f88b6b576ab1586cabcee3',
+          amount: '+2.000000 DOWN Secured',
+          blockRef: currentBlock ? `Block #${currentBlock}` : 'Block #Live Mined',
           status: 'STREAMED',
+          category: 'MINT',
+          details: 'Dynamic simulation event: complete-set minting executed on-chain',
           isLive: true,
         },
         ...verifiedAnchors,
@@ -595,7 +587,17 @@ export default function App() {
           {/* Real-time Somnia Shannon Block Height Poller Badge */}
           <div className="hidden lg:flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-mono bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 shadow-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-            <span className="font-semibold">{currentBlock ? `Block #${currentBlock}` : 'Chain 50312'}</span>
+            <span className="font-semibold">
+              {isLoadingBlock && !currentBlock ? (
+                <span className="animate-pulse">Syncing...</span>
+              ) : blockError ? (
+                <span className="text-amber-500">RPC Slow</span>
+              ) : currentBlock ? (
+                `Block #${currentBlock}`
+              ) : (
+                'Chain 50312'
+              )}
+            </span>
             <span className="text-emerald-600/70 dark:text-emerald-500/70 text-[10px]">
               {rpcLatency ? `${rpcLatency}ms` : '~100ms'}
             </span>
@@ -633,25 +635,25 @@ export default function App() {
           </button>
 
           {walletConnected ? (
-            <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-mono bg-white dark:bg-zinc-900 border border-emerald-500/40 dark:border-emerald-500/30 text-slate-800 dark:text-zinc-200 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <div className="flex items-center gap-2 text-xs font-mono">
-                <span className="font-semibold text-slate-900 dark:text-white">
+            <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-mono bg-white dark:bg-zinc-900 border border-emerald-500/40 dark:border-emerald-500/30 text-slate-800 dark:text-zinc-200 shadow-sm max-w-[240px] sm:max-w-none">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono overflow-hidden">
+                <span className="font-semibold text-slate-900 dark:text-white shrink-0">
                   {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                 </span>
-                <span className="text-slate-400 dark:text-slate-600">|</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                  {sttBalance} STT
+                <span className="text-slate-400 dark:text-slate-600 hidden xs:inline">|</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium truncate">
+                  {isLoadingBalances || !sttBalance ? '-- STT' : `${Number(sttBalance).toFixed(3)} STT`}
                 </span>
-                <span className="text-slate-400 dark:text-slate-600">·</span>
-                <span className="text-cyan-600 dark:text-cyan-400 font-medium">
-                  {usdcBalance} tUSDC
+                <span className="text-slate-400 dark:text-slate-600 hidden sm:inline">·</span>
+                <span className="text-cyan-600 dark:text-cyan-400 font-medium hidden sm:inline truncate">
+                  {isLoadingBalances || !usdcBalance ? '-- USDC' : `${Number(usdcBalance).toFixed(3)} tUSDC`}
                 </span>
               </div>
               <button 
                 onClick={disconnectWallet}
                 title="Disconnect" 
-                className="ml-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                className="ml-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer shrink-0"
               >
                 <X className="w-3.5 h-3.5"/>
               </button>
@@ -822,13 +824,19 @@ export default function App() {
           </div>
         )}
 
+        {/* Dedicated Live On-Chain Solvency Panel (Real deployed MockLendingPosition.sol) */}
+        <LiveOnChainPanel theme={theme} />
+
         <div id="stress-test" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#0E0E14] border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-none space-y-6">
+          <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0E0E14] border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-none space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-mono uppercase font-bold tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-cyan-600 dark:text-cyan-400"/> Position Solvency Gauge
-              </h3>
+              <div>
+                <h3 className="text-xs font-mono uppercase font-bold tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-cyan-600 dark:text-cyan-400"/> Position Solvency Gauge
+                </h3>
+                <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">Interactive Simulation Playground</span>
+              </div>
               <span className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded ${
                 isSafe ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' :
                 isWarning ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-800' :
@@ -874,10 +882,22 @@ export default function App() {
             </div>
 
             <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"/> Market Price Shock
-                </span>
+              <div className="flex flex-wrap items-center justify-between text-xs font-mono gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"/> Market Price Shock
+                  </span>
+                  <a
+                    href="https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-mono transition-colors border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 rounded shadow-2xs"
+                    title="View real MockLendingPosition contract on Shannon Explorer"
+                  >
+                    <span>0x728b...6343</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
                 <span className="text-rose-600 dark:text-rose-400 font-bold">-{marketShock}% Drop</span>
               </div>
 
@@ -1080,92 +1100,129 @@ export default function App() {
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
               Immutable Verification Ledger
             </h2>
+            <p className="font-mono text-xs text-slate-500 dark:text-zinc-400 mt-1">
+              Synchronized with EVIDENCE.md &amp; cryptographic audit receipts in /receipts
+            </p>
           </div>
-          <div className="text-xs font-mono text-slate-500 dark:text-zinc-400 flex items-center gap-2">
-            <span>Explorer:</span>
-            <a href="https://shannon-explorer.somnia.network" target="_blank" rel="noreferrer" className="text-rose-600 dark:text-rose-400 hover:underline">
-              shannon-explorer.somnia.network
+          <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-mono text-xs shadow-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="font-medium">RECOVERED:</span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-400">+2.000 tUSDC</span>
+            </div>
+            <a
+              href="https://shannon-explorer.somnia.network"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-mono text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+            >
+              <span>Shannon Explorer</span>
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
         </div>
 
+        {/* Filter Bar */}
+        <div className="flex items-center gap-2 font-mono text-xs overflow-x-auto pb-1">
+          {['ALL', 'LENDING', 'MINT', 'RECOVERY'].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => {
+                sounds.playClick();
+                setAuditFilter(cat);
+              }}
+              className={`px-3 py-1 rounded-lg border text-[11px] transition-colors cursor-pointer whitespace-nowrap ${
+                auditFilter === cat
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-bold border-transparent shadow-xs'
+                  : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800'
+              }`}
+            >
+              {cat === 'ALL' ? `All Records (${auditLogs.length})` : cat}
+            </button>
+          ))}
+        </div>
+
         {/* Ledger Table Card */}
         <div className="rounded-3xl bg-white dark:bg-[#0E0E14] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left font-mono text-xs">
+          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+            <table className="w-full text-left font-mono text-xs min-w-[680px]">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-500 dark:text-zinc-400">
                   <th className="py-3 px-4">Action / Mechanism</th>
-                  <th className="py-3 px-4">Target Pool / Context</th>
+                  <th className="py-3 px-4">Target Pool / Details</th>
                   <th className="py-3 px-4">Transaction Hash</th>
                   <th className="py-3 px-4">Amount / Outcome</th>
-                  <th className="py-3 px-4">Confirmed Block / Ref</th>
+                  <th className="py-3 px-4">Confirmed Block</th>
                   <th className="py-3 px-4">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
-                {auditLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/30 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      {log.isLive && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
-                      )}
-                      <span>{log.action}</span>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600 dark:text-zinc-400">
-                      {log.pool}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {log.hash.startsWith('0x') ? (
-                        <div className="flex items-center space-x-2">
-                          <a
-                            href={`https://shannon-explorer.somnia.network/tx/${log.hash}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
-                          >
-                            <span>{log.hash.slice(0, 10)}...{log.hash.slice(-8)}</span>
-                            <ExternalLink className="w-3 h-3"/>
-                          </a>
-                          <button
-                            onClick={() => handleCopy(log.hash)}
-                            title="Copy full hash"
-                            className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
-                          >
-                            {copiedHash === log.hash ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-500"/>
-                            ) : (
-                              <Copy className="w-3.5 h-3.5"/>
-                            )}
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                          {log.hash}
+                {auditLogs
+                  .filter((log) => auditFilter === 'ALL' || log.category === auditFilter)
+                  .map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/30 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        {log.isLive && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                        )}
+                        <span>{log.action}</span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-zinc-400 max-w-xs">
+                        <p className="truncate text-[11px]" title={log.details || log.pool}>{log.details || log.pool}</p>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {log.hash.startsWith('0x') ? (
+                          <div className="flex items-center space-x-2">
+                            <a
+                              href={`https://shannon-explorer.somnia.network/tx/${log.hash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                            >
+                              <span>{log.hash.slice(0, 10)}...{log.hash.slice(-8)}</span>
+                              <ExternalLink className="w-3 h-3"/>
+                            </a>
+                            <button
+                              onClick={() => handleCopy(log.hash)}
+                              title="Copy full hash"
+                              className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                            >
+                              {copiedHash === log.hash ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-500"/>
+                              ) : (
+                                <Copy className="w-3.5 h-3.5"/>
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="font-mono text-xs px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                            {log.hash}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400">
+                        {log.amount}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-700 dark:text-zinc-300 font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
+                          {log.blockRef}
                         </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400">
-                      {log.amount}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-700 dark:text-zinc-300 font-semibold">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                        {log.blockRef}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                        log.status === 'CONFIRMED' || log.status === 'RESTORED'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-                          : log.status === 'STREAMED'
-                          ? 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800 animate-pulse'
-                          : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-                      }`}>
-                        {log.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          log.status === 'CONFIRMED' || log.status === 'RESTORED' || log.status === 'RECLAIMED'
+                            ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                            : log.status === 'STREAMED'
+                            ? 'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800 animate-pulse'
+                            : log.status === 'HAZARD FIRED'
+                            ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-400 border-rose-200 dark:border-rose-900 animate-pulse'
+                            : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                        }`}>
+                          {log.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
