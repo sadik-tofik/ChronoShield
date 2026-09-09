@@ -15,6 +15,25 @@ During high-volatility crashes:
 
 ---
 
+## System Architecture: What Is Live vs. Simulated
+
+To guarantee transparency, ChronoShield enforces a strict taxonomy:
+
+* 🟢 **LIVE ON-CHAIN (Somnia Shannon Testnet)**:
+  * **Solvency Contract**: `MockLendingPosition.sol` (`0x728b...6343`) runs live state storage on Somnia Shannon.
+  * **DreamDEX Protocol Contracts**: Binary event pools, outcome token contracts, and core settlement contracts.
+  * **Hedging & Fallback Execution**: All `mintSet`, `approve`, and state-shock calls are broadcast and mined into Somnia blocks.
+  * **Collateral Settlement**: Payout redemption via `redeem()` on settled markets.
+
+* 🔵 **LIVE OFF-CHAIN DAEMON**:
+  * **Keeper Service**: Standalone Viem/Node.js process polling on-chain lending storage and monitoring health factor drift.
+  * **Dynamic Market Discoverer**: Queries DreamDEX binary indexers to select markets with active trading windows.
+
+* 🟡 **CONTROLLED SIMULATION**:
+  * **Market Stressor (`applyShock`)**: Because this is a testnet lending position, market flash-crashes are triggered via contract parameter manipulation (`applyShock(dropPercent)`) rather than waiting for third-party oracle drops.
+
+---
+
 ## The Solution: Dual-Layer Fallback Hedging
 
 ```
