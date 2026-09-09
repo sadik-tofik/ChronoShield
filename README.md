@@ -1,5 +1,7 @@
 # ChronoShield: Autonomous Lending Guardian on Somnia
 
+![Verify On-Chain Tape](https://github.com/sadik-tofik/chronoshield/actions/workflows/verify-receipts.yml/badge.svg)
+
 > **Deterministic Solvency Protection via DreamDEX Binary Event Markets with Dual-Layer Liquidity Fallback**
 
 ChronoShield bridges on-chain DeFi lending solvency with binary prediction derivatives on Somnia Shannon Testnet. When borrower positions enter the liquidation hazard zone, ChronoShield autonomously executes targeted downside hedges on DreamDEX. If the central limit order book (CLOB) lacks depth during rapid market dislocations, ChronoShield executes protocol-level complete-set minting (`mintSet`), guaranteeing position protection regardless of orderbook drought.
