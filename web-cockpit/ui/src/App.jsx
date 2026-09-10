@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import { sounds } from './utils/audio';
 import LiveOnChainPanel from './components/LiveOnChainPanel';
+import TerminalAuditor from './components/TerminalAuditor';
+import ArchitectureModal from './components/ArchitectureModal';
 import { VERIFIED_RECEIPTS } from './data/verifiedReceipts';
 
 export default function App() {
@@ -261,10 +263,11 @@ export default function App() {
   }, [walletAddress, walletConnected]);
 
   // ==========================================
-  // DOCUMENTATION SLIDE-OVER DRAWER STATE
+  // DOCUMENTATION & ARCHITECTURE MODAL STATE
   // ==========================================
   const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [docsTab, setDocsTab] = useState('architecture');
+  const [isArchModalOpen, setIsArchModalOpen] = useState(false);
 
   // ==========================================
   // FINANCIAL QUANT ENGINE STATE
@@ -624,6 +627,17 @@ export default function App() {
           </a>
 
           <button
+            onClick={() => {
+              sounds.playClick();
+              setIsArchModalOpen(true);
+            }}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800 transition-colors cursor-pointer"
+            title="Open Interactive Protocol Architecture Diagram"
+          >
+            <span>Architecture</span>
+          </button>
+
+          <button
             onClick={toggleTheme}
             aria-label="Toggle visual theme"
             className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800 transition-colors cursor-pointer"
@@ -711,7 +725,7 @@ export default function App() {
               <button
                 onClick={() => {
                   sounds.playClick();
-                  setIsDocsOpen(true);
+                  setIsArchModalOpen(true);
                 }}
                 className="px-6 py-3.5 rounded-xl text-xs font-mono font-semibold uppercase tracking-wider bg-white dark:bg-zinc-900/80 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-800 shadow-xs transition-all tech-bracket cursor-pointer"
               >
@@ -827,6 +841,9 @@ export default function App() {
 
         {/* Dedicated Live On-Chain Solvency Panel (Real deployed MockLendingPosition.sol) */}
         <LiveOnChainPanel theme={theme} />
+
+        {/* Dual-Mode Audit Console: Live RPC Verification & Lifecycle Replay */}
+        <TerminalAuditor />
 
         <div id="stress-test" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
@@ -1444,6 +1461,12 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Interactive System Architecture Visualizer Modal */}
+      <ArchitectureModal 
+        isOpen={isArchModalOpen} 
+        onClose={() => setIsArchModalOpen(false)} 
+      />
 
       {/* Footer */}
       <footer className="border-t border-slate-200 dark:border-zinc-800/80 py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center font-mono text-xs text-slate-500 dark:text-zinc-500">

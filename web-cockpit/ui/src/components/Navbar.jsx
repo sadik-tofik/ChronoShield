@@ -5,6 +5,8 @@ import ThemeToggle from './ThemeToggle';
 
 export default function Navbar({
   onOpenWhitepaper,
+  onOpenArchitecture,
+  setIsArchModalOpen,
   theme,
   onToggleTheme,
   walletAddress = '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1',
@@ -122,6 +124,19 @@ export default function Navbar({
             <BookOpen className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
             <span>Docs ↗</span>
           </a>
+
+          {/* Architecture Visualizer Button */}
+          <button
+            onClick={() => {
+              sounds.playClick();
+              if (setIsArchModalOpen) setIsArchModalOpen(true);
+              if (onOpenArchitecture) onOpenArchitecture();
+            }}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-white/[0.08] bg-zinc-100/80 hover:bg-zinc-200/70 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:border-cyan-500/40 text-xs font-mono transition-colors cursor-pointer"
+            title="Open Interactive Protocol Architecture Diagram"
+          >
+            <span>Architecture</span>
+          </button>
 
           {/* Wallet Address & Live Balance Pill */}
           {walletConnected ? (
