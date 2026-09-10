@@ -37,7 +37,7 @@ Every autonomous run generates a timestamped, signed audit log sealed with a uni
 
 ## 3. Zero-Config Local Verification
 
-Any judge or evaluator can audit all receipts against the live Somnia Shannon RPC in under 5 seconds with zero configuration:
+Any judge or evaluator can audit all receipts against the live Somnia Shannon RPC in seconds with zero configuration:
 
 ```bash
 cd web-cockpit/typescript
