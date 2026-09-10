@@ -12,11 +12,11 @@
 
 ## ⚡ 60-Second Judge Verification (Zero Config / No `.env` Needed)
 
-Evaluators and judges can independently audit the live on-chain state and 20 invariant proofs in two commands:
+Evaluators and judges can independently audit the live on-chain state and 24 invariant proofs in two commands:
 
 ```bash
 cd web-cockpit/typescript && npm install
-npm test          # 20/20 invariant math & safety boundary tests passing
+npm test          # 24/24 invariant math, routing & fail-closed safety policy tests passing
 npm run verify    # 6/6 live on-chain lifecycle checks against Somnia Shannon RPC (Chain ID 50312)
 ```
 
@@ -115,7 +115,7 @@ During high-volatility crashes:
 * **`npm run hedge` (`src/run-live-hedge.mjs`) — Manual Operator Tool**: Directly targets the current active DreamDEX market and executes a standalone `mintSet` transaction regardless of borrower state. Used for operator testing and quick protocol integration checks.
 * **`npm run demo` (`src/demo-e2e.mjs`) — Complete Audit Showcase**: Runs the automated 5-step lifecycle and writes a SHA-256 cryptographic receipt to `/receipts/`.
 * **`npm run verify` (`src/verify-receipts.mjs`) — Verification Harness**: Verifies all on-chain receipts and live contract storage against Somnia Shannon Testnet RPC.
-* **`npm test` (`test/invariants.test.mjs`) — 20 Invariant Test Suite**: Rigorously tests chain configurations, solvency boundaries, math limits, and routing invariants.
+* **`npm test` (`test/invariants.test.mjs`) — 24 Invariant Test Suite**: Rigorously tests chain configurations, solvency boundaries, math limits, routing invariants, and fail-closed safety policy gates.
 
 ---
 
@@ -137,7 +137,7 @@ During high-volatility crashes:
 cd web-cockpit/typescript
 npm install
 
-# 1. Run the 20-test unit and invariant suite
+# 1. Run the 24-test unit, invariant, and safety gate suite
 npm test
 
 # 2. Verify all on-chain historical transactions against Somnia Shannon RPC

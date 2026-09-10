@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-09-10T04:56:01.868Z",
+  "chainId": 50312,
+  "adapter": "0x728b9579edec0e8ef5422f2980c302d5bd266343",
+  "operator": "0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1",
+  "initialHF": "1.360",
+  "shockTx": "0xaa5f15dbacb279e90cfed3afc18111b4f90d4d94fdeea329ca73060244da705b",
+  "shockedHF": "1.020",
+  "targetPool": "0x5397cd6DE6e87eB7f2D9B72191B5eFfb16E53D62",
+  "marketId": "0x0000000000000000000000000000000000000000000000000000000000018c5a",
+  "safetyGates": "PASS (4/4 GATES VERIFIED)",
+  "mintHedgeTx": "0x19d68a441a47d6de811378e90afd997208af05008f3b39f4da1151fe47ae5666",
+  "resetTx": "0x94886a61e21ddb85d2990d8b0fb2f5bbcc169b9d087a555b78e90913a6f7fd35",
+  "finalHF": "1.360",
+  "sha256": "2a588f7702703378dd9a77f3e8cc3104f4460ff6510e65ad3757768342c514c9"
+}

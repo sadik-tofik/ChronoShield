@@ -5,7 +5,9 @@ import {
   calculateHealthFactor,
   somniaShannon,
   RPC_URL,
-  CONTRACTS
+  CONTRACTS,
+  SAFETY_GATES,
+  evaluateFailClosedGates
 } from '../src/config.mjs';
 
 describe('1. Network & Chain Configuration Invariants', () => {
@@ -163,5 +165,58 @@ describe('5. Safety Thresholds & Breach Detection', () => {
     const targetHfBps = 1360n;
     const requiredCol = (targetHfBps * debt * 10000n) / (8500n * 1000n);
     assert.equal(requiredCol / (10n ** 18n), 2000n);
+  });
+});
+
+describe('6. Fail-Closed Policy Gate Invariants', () => {
+  it('rejects pools with less than 120s expiry headroom', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const check = evaluateFailClosedGates({
+      expiry: now + 60, // Only 60s left
+      depth: { hasLiquidity: false, bidsCount: 0, asksCount: 0 },
+      hedgeAmount: 2_000_000n,
+      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1',
+      expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+    });
+    assert.equal(check.allPassed, false);
+    assert.equal(check.results[0].passed, false);
+  });
+
+  it('approves pools with adequate expiry headroom (>= 120s)', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const check = evaluateFailClosedGates({
+      expiry: now + 300, // 5 min
+      depth: { hasLiquidity: false, bidsCount: 0, asksCount: 0 },
+      hedgeAmount: 2_000_000n,
+      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1',
+      expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+    });
+    assert.equal(check.allPassed, true);
+  });
+
+  it('rejects hedge attempts exceeding maximum budget cap', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const check = evaluateFailClosedGates({
+      expiry: now + 300,
+      depth: { hasLiquidity: false, bidsCount: 0, asksCount: 0 },
+      hedgeAmount: 15_000_000n, // $15 USDC (cap is $10)
+      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1',
+      expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+    });
+    assert.equal(check.allPassed, false);
+    assert.equal(check.results[1].passed, false);
+  });
+
+  it('rejects unauthorized operator signatures', () => {
+    const now = Math.floor(Date.now() / 1000);
+    const check = evaluateFailClosedGates({
+      expiry: now + 300,
+      depth: { hasLiquidity: false, bidsCount: 0, asksCount: 0 },
+      hedgeAmount: 2_000_000n,
+      operatorAddress: '0x000000000000000000000000000000000000dEaD',
+      expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+    });
+    assert.equal(check.allPassed, false);
+    assert.equal(check.results[2].passed, false);
   });
 });

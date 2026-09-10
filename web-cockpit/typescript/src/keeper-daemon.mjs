@@ -11,7 +11,10 @@ import {
   LENDING_ADAPTER_ADDRESS,
   LIQUIDATION_WARNING_THRESHOLD,
   USDC_UNIT,
+  CONSTANTS,
   fetchOnChainHealthFactor,
+  evaluateFailClosedGates,
+  getOperatorAccount,
 } from './config.mjs';
 
 const HEDGE_AMOUNT = 2n * USDC_UNIT; // 2 sets ($2 collateral)
@@ -23,59 +26,52 @@ async function checkOrderBookDepth(marketId) {
     const bids = ob?.bids || [];
     return {
       hasLiquidity: asks.length + bids.length > 0,
-      bidsCount: bids.length,
       asksCount: asks.length,
+      bidsCount: bids.length,
     };
-  } catch {
-    return { hasLiquidity: false, bidsCount: 0, asksCount: 0 };
+  } catch (err) {
+    return { hasLiquidity: false, asksCount: 0, bidsCount: 0 };
   }
 }
 
 async function runDaemon() {
   console.log("=========================================================================");
-  console.log("  CHRONOSHIELD AUTONOMOUS LIQUIDATION KEEPER DAEMON");
-  console.log("  Network: Somnia Shannon Testnet (Chain ID: 50312)");
-  console.log(`  Solvency Adapter: ${LENDING_ADAPTER_ADDRESS}`);
+  console.log("  CHRONOSHIELD: AUTONOMOUS GUARDIAN KEEPER DAEMON");
   console.log("=========================================================================\n");
 
-  console.log("[1/4] Querying borrower solvency state from contract...");
+  console.log("[1/4] Checking borrower on-chain health factor...");
   const hf = await fetchOnChainHealthFactor();
-  console.log(`      Health Factor:     ${hf.toFixed(3)}`);
-  console.log(`      Safety Threshold:  ${LIQUIDATION_WARNING_THRESHOLD.toFixed(3)}`);
+  console.log(`      Current Health Factor: ${hf.toFixed(3)}`);
 
   if (hf >= LIQUIDATION_WARNING_THRESHOLD) {
-    console.log(`\n[STATUS] Solvency Healthy (${hf.toFixed(3)} >= ${LIQUIDATION_WARNING_THRESHOLD}).`);
-    console.log("[STATUS] No liquidation risk. Keeper in standby.");
+    console.log(`\n[STATUS NORMAL] Health factor ${hf.toFixed(3)} >= ${LIQUIDATION_WARNING_THRESHOLD}. No hedge required.`);
     return;
   }
 
-  console.log(`\n[ALERT] SOLVENCY BREACH! Current HF: ${hf.toFixed(3)} < ${LIQUIDATION_WARNING_THRESHOLD}`);
-  console.log("[ACTION] Deploying downside hedge on DreamDEX...");
+  console.log(`\n[LIQUIDATION WARNING] HF ${hf.toFixed(3)} breached threshold ${LIQUIDATION_WARNING_THRESHOLD}!`);
 
-  console.log("\n[2/4] Discovering active binary market on Somnia...");
-  let target = null;
+  console.log("\n[2/4] Discovering active binary event markets...");
   const now = Math.floor(Date.now() / 1000);
+  let target = null;
 
   try {
-    const markets = await ex.client.listBinaryMarkets({ limit: 100 });
-    const active = (markets || [])
-      .filter((m) => Number(m.expiry || 0) > now + 30)
-      .sort((a, b) => Number(b.expiry || 0) - Number(a.expiry || 0));
-
+    const markets = await ex.client.listBinaryMarkets({ limit: 50 });
+    const active = (markets || []).filter((m) => Number(m.expiry || 0) > now + 30);
     if (active.length > 0) {
+      active.sort((a, b) => Number(b.expiry || 0) - Number(a.expiry || 0));
       target = active[0];
     }
   } catch (err) {
-    console.warn("Indexer query warning:", err.message);
+    console.warn(`[WARN] Market discovery via indexer failed: ${err.message}`);
   }
 
-  // Fallback to market.json if indexer scan didn't return a candidate
   if (!target) {
     try {
-      const mJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../market.json'), 'utf8'));
-      if (mJson.pool && mJson.marketId) {
+      const marketJsonPath = path.join(__dirname, '../market.json');
+      if (fs.existsSync(marketJsonPath)) {
+        const mJson = JSON.parse(fs.readFileSync(marketJsonPath, 'utf8'));
         target = {
-          pool: mJson.pool,
+          poolAddress: mJson.pool,
           marketId: mJson.marketId,
           expiry: mJson.expiry || now + 300,
         };
@@ -106,6 +102,33 @@ async function runDaemon() {
   console.log("\n[3/4] Checking orderbook liquidity...");
   const depth = await checkOrderBookDepth(targetMarketId);
   console.log(`      CLOB Depth:        ${depth.bidsCount} Bids / ${depth.asksCount} Asks`);
+
+  console.log("\n[3.5/4] Executing Fail-Closed Policy Gate Check...");
+  let operatorAddress;
+  try {
+    operatorAddress = getOperatorAccount()?.address;
+  } catch {
+    operatorAddress = null;
+  }
+
+  const gateCheck = evaluateFailClosedGates({
+    expiry: target.expiry,
+    depth,
+    hedgeAmount: HEDGE_AMOUNT,
+    operatorAddress,
+    expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+  });
+
+  gateCheck.results.forEach((r) => {
+    const icon = r.passed ? "✔ PASS" : "✖ FAIL";
+    console.log(`      [${icon}] ${r.gate.padEnd(28)} : ${r.detail}`);
+  });
+
+  if (!gateCheck.allPassed) {
+    console.error("\n[FAIL-CLOSED POLICY TRIGGERED] One or more safety gates failed. Aborting hedge execution.");
+    return;
+  }
+  console.log("      All safety gates verified. Authorization unlocked.");
 
   console.log("\n[4/4] Executing hedge...");
   if (!depth.hasLiquidity) {
