@@ -6,7 +6,27 @@
 [![Developer Feedback](https://img.shields.io/badge/SDK%20Review-FEEDBACK.md-purple.svg)](./FEEDBACK.md)
 [![Developer Docs](https://img.shields.io/badge/Docs-DreamDEX%20Style-cyan.svg)](./docs/index.html)
 
-> **ChronoShield delivers deterministic DeFi solvency protection by bridging an on-chain lending position adapter with DreamDEX binary event markets on Somnia Shannon, utilizing autonomous dual-layer fallback routing to hedge borrower liquidation risk even during complete orderbook droughts.**
+> **ChronoShield is an autonomous solvency guardian on Somnia Shannon that protects lending borrowers from liquidation by dynamically hedging downside risk on DreamDEX binary event markets. Built on a deployed on-chain lending position adapter (`MockLendingPosition.sol`) and Somnia's sub-second finality, ChronoShield monitors live health factors and dispatches a dual-layer router that takes active orderbook depth or falls back directly to protocol-level complete-set minting (`mintSet`) when books are dry. Every lifecycle transition—from collateral shock to emergency hedge, baseline reset, and vault collateral redemption (`redeem`)—is cryptographically sealed in an immutable SHA-256 audit tape verified live on Somnia Shannon RPC.**
+
+---
+
+## ⚡ 60-Second Judge Verification (Zero Config / No `.env` Needed)
+
+Evaluators and judges can independently audit the live on-chain state and 20 invariant proofs in two commands:
+
+```bash
+cd web-cockpit/typescript && npm install
+npm test          # 20/20 invariant math & safety boundary tests passing
+npm run verify    # 6/6 live on-chain lifecycle checks against Somnia Shannon RPC (Chain ID 50312)
+```
+
+| 📜 Audit Resource | Description | Status |
+| :--- | :--- | :--- |
+| **[EVIDENCE.md](./EVIDENCE.md)** | Canonical on-chain ledger with direct explorer links to all deployed contracts, shocks, and hedges | 🟢 Live Verified |
+| **[/receipts/](./receipts/)** | Timestamped JSON execution logs sealed with SHA-256 cryptographic digests | 🔒 Immutable |
+| **[verify-receipts.mjs](./web-cockpit/typescript/src/verify-receipts.mjs)** | Standalone RPC verification tape script (queries Somnia Shannon directly) | ⚡ Zero Config |
+| **[FEEDBACK.md](./FEEDBACK.md)** | Developer feedback & SDK friction report on `@somnia-chain/markets-sdk` | 💡 Detailed |
+| **[Live Web Cockpit](./web-cockpit/ui)** | Real-time telemetry dashboard reading live from `MockLendingPosition.sol` | 🖥️ Interactive |
 
 ---
 
@@ -105,8 +125,8 @@ During high-volatility crashes:
 | :--- | :--- | :--- | :--- |
 | **Solvency Contract** | [`0x728b9579edec0e8ef5422f2980c302d5bd266343`](https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343) | `#484098396` | 🟢 Verified |
 | **Live Solvency Shock** | [`0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924`](https://shannon-explorer.somnia.network/tx/0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924) | `#484162912` | 🟢 Confirmed |
-| **Complete-Set Hedge (`mintSet`)** | [`0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6`](https://shannon-explorer.somnia.network/tx/0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6) | `#484162915` | 🟢 Confirmed |
-| **Position Reset** | [`0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45`](https://shannon-explorer.somnia.network/tx/0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45) | `#484162918` | 🟢 Confirmed |
+| **Complete-Set Hedge (`mintSet`)** | [`0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6`](https://shannon-explorer.somnia.network/tx/0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6) | `#484163041` | 🟢 Confirmed |
+| **Position Reset** | [`0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45`](https://shannon-explorer.somnia.network/tx/0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45) | `#484163113` | 🟢 Confirmed |
 | **Collateral Reclamation** | [`0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73`](https://shannon-explorer.somnia.network/tx/0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73) | `#481305363` | 🟢 Confirmed |
 
 ---
