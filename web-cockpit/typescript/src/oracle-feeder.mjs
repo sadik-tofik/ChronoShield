@@ -35,10 +35,10 @@ async function fetchPythPrice(feedId) {
       }
     }
   } catch (err) {
-    // Fall through to open institutional failover
+    // Fall through to open institutional fallback
   }
 
-  // Institutional failover to ensure zero-config judge reproducibility without mandatory API key
+  // Institutional fallback to ensure zero-config judge reproducibility without mandatory API key
   try {
     const cbRes = await fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot");
     if (cbRes.ok) {
@@ -46,7 +46,7 @@ async function fetchPythPrice(feedId) {
       const p = parseFloat(cbData?.data?.amount);
       if (!isNaN(p) && p > 0) {
         return {
-          source: "Coinbase Oracle Feed (Pyth Unauthenticated Failover)",
+          source: "Coinbase Oracle Feed (Pyth Unauthenticated Fallback)",
           price: p,
           conf: 0.25,
           publishTime: new Date().toISOString()
@@ -58,7 +58,7 @@ async function fetchPythPrice(feedId) {
   const bRes = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT");
   const bData = await bRes.json();
   return {
-    source: "Binance Spot Oracle Feed (Pyth Unauthenticated Failover)",
+    source: "Binance Spot Oracle Feed (Pyth Unauthenticated Fallback)",
     price: parseFloat(bData.price),
     conf: 0.25,
     publishTime: new Date().toISOString()
