@@ -18,6 +18,8 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
     borrowedDebtUsd: 1250.0,
     healthFactor: 1.36,
   });
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -26,6 +28,7 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
 
   const fetchOnChainState = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true);
+    setIsValidating(true);
     setError(null);
 
     try {
@@ -67,14 +70,17 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
           healthFactor: hfVal,
         });
         setLastUpdated(new Date().toLocaleTimeString());
+        setIsInitialLoad(false);
       } else {
         throw new Error('Invalid RPC call payload');
       }
     } catch (err) {
       console.warn('On-Chain Adapter Poll Error:', err);
       setError('RPC Stalled — Retrying');
+      setIsInitialLoad(false);
     } finally {
       setLoading(false);
+      setIsValidating(false);
       if (isManual) {
         setTimeout(() => setRefreshing(false), 500);
       }
@@ -130,30 +136,35 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          {error ? (
+        {/* Action buttons & Status */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {isInitialLoad ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-ping" />
+              Syncing Live RPC...
+            </span>
+          ) : error ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>{error}</span>
             </span>
           ) : (
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>LIVE ON-CHAIN</span>
+              <span>Live On-Chain</span>
             </div>
           )}
 
           <button
             onClick={handleManualRefresh}
-            disabled={refreshing}
+            disabled={refreshing || isValidating}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white border border-zinc-200 dark:border-white/[0.08] text-xs font-mono transition-all cursor-pointer disabled:opacity-50"
             title="Force immediate RPC poll"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 ${refreshing || loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 ${refreshing || isValidating ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
@@ -162,20 +173,21 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Metric 1: Health Factor */}
-        <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/[0.06] space-y-1">
+        <div className={`p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/[0.06] space-y-1 transition-opacity duration-300 ${isInitialLoad ? 'opacity-80' : 'opacity-100'}`}>
           <div className="flex items-center justify-between text-xs font-mono text-zinc-500 dark:text-zinc-400">
             <span>REAL ON-CHAIN HF</span>
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+              isInitialLoad ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 animate-pulse' :
               isSafe ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400' :
               isWarning ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 animate-pulse' :
               'bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-400 animate-bounce'
             }`}>
-              {isSafe ? 'SAFE' : isWarning ? 'HAZARD ACTIVE' : 'LIQUIDATABLE'}
+              {isInitialLoad ? 'SYNCING...' : isSafe ? 'SAFE' : isWarning ? 'HAZARD ACTIVE' : 'LIQUIDATABLE'}
             </span>
           </div>
           <div className="text-3xl font-mono font-bold tracking-tight">
-            {loading ? (
-              <span className="text-zinc-400 animate-pulse">--.---</span>
+            {isInitialLoad ? (
+              <span className="text-slate-400 dark:text-slate-500 animate-pulse">--.---</span>
             ) : (
               <span className={
                 isSafe ? 'text-emerald-600 dark:text-emerald-400' :
@@ -186,17 +198,25 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
               </span>
             )}
           </div>
-          <p className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">
-            Threshold: 1.150 | Liquidation: 1.000
+          <p className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 flex items-center justify-between">
+            <span>Threshold: 1.150 | Liquidation: 1.000</span>
+            {isInitialLoad && <span className="text-amber-600 dark:text-amber-400 font-semibold animate-pulse">Syncing...</span>}
           </p>
         </div>
 
         {/* Metric 2: Collateral USD */}
-        <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/[0.06] space-y-1">
-          <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">COLLATERAL STORAGE</span>
+        <div className={`p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/[0.06] space-y-1 transition-opacity duration-300 ${isInitialLoad ? 'opacity-80' : 'opacity-100'}`}>
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-500 dark:text-zinc-400">
+            <span>COLLATERAL STORAGE</span>
+            {isInitialLoad && (
+              <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 animate-pulse font-medium">
+                Syncing...
+              </span>
+            )}
+          </div>
           <div className="text-3xl font-mono font-bold text-zinc-950 dark:text-white">
-            {loading ? (
-              <span className="text-zinc-400 animate-pulse">$---.--</span>
+            {isInitialLoad ? (
+              <span className="text-slate-400 dark:text-slate-500 animate-pulse">$---.--</span>
             ) : (
               <span>${data.collateralUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             )}
@@ -207,11 +227,18 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
         </div>
 
         {/* Metric 3: Borrowed Debt USD */}
-        <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/[0.06] space-y-1">
-          <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">BORROWED DEBT</span>
+        <div className={`p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/[0.06] space-y-1 transition-opacity duration-300 ${isInitialLoad ? 'opacity-80' : 'opacity-100'}`}>
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-500 dark:text-zinc-400">
+            <span>BORROWED DEBT</span>
+            {isInitialLoad && (
+              <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 animate-pulse font-medium">
+                Syncing...
+              </span>
+            )}
+          </div>
           <div className="text-3xl font-mono font-bold text-zinc-950 dark:text-white">
-            {loading ? (
-              <span className="text-zinc-400 animate-pulse">$---.--</span>
+            {isInitialLoad ? (
+              <span className="text-slate-400 dark:text-slate-500 animate-pulse">$---.--</span>
             ) : (
               <span>${data.borrowedDebtUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             )}
@@ -229,6 +256,15 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
           <code className="text-zinc-800 dark:text-zinc-200 font-semibold bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800">
             {CONTRACT_ADDRESS}
           </code>
+          {isInitialLoad && (
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60 animate-pulse">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+              </span>
+              INITIALIZING ON-CHAIN TAPE...
+            </span>
+          )}
           <button
             onClick={handleCopy}
             className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
@@ -248,7 +284,16 @@ export default function LiveOnChainPanel({ theme = 'light' }) {
         </div>
 
         <div className="text-[11px] text-zinc-400 dark:text-zinc-500">
-          {lastUpdated ? `Polled at ${lastUpdated} (~8s interval)` : 'Syncing with Somnia Shannon RPC...'}
+          {isInitialLoad ? (
+            <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+              Syncing with Somnia Shannon RPC...
+            </span>
+          ) : lastUpdated ? (
+            `Polled at ${lastUpdated} (~8s interval)`
+          ) : (
+            'Syncing with Somnia Shannon RPC...'
+          )}
         </div>
       </div>
     </div>
