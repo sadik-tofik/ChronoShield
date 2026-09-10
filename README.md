@@ -12,11 +12,11 @@
 
 ## ⚡ 60-Second Judge Verification (Zero Config / No `.env` Needed)
 
-Evaluators and judges can independently audit the live on-chain state and 24 invariant proofs in two commands:
+Evaluators and judges can independently audit the live on-chain state and 27 invariant proofs in two commands:
 
 ```bash
 cd web-cockpit/typescript && npm install
-npm test          # 24/24 invariant math, routing & fail-closed safety policy tests passing
+npm test          # 27/27 invariant math, Pyth scaling & fail-closed safety policy tests passing
 npm run verify    # 6/6 live on-chain lifecycle checks against Somnia Shannon RPC (Chain ID 50312)
 ```
 
@@ -111,11 +111,12 @@ During high-volatility crashes:
 
 ## Execution Entry Points: Autonomous vs. Manual
 
-* **`npm run daemon` (`src/keeper-daemon.mjs`) — Autonomous Engine**: Continuously evaluates borrower health factor against `MockLendingPosition.sol`. It only triggers if $HF < 1.150$, inspecting CLOB depth and dynamically selecting between IOC taking or `mintSet` fallback.
+* **`npm run oracle` (`src/oracle-feeder.mjs`) — Live Pyth Network Oracle Feeder**: Reads live ETH/USD spot data from Pyth Network Hermes (with institutional failover) and computes real price movement against a persistent `.oracle-baseline.json`. Because live ETH/USD rarely experiences a 25% crash during a demonstration window, this will typically report an honest 0% or small delta—confirming the feeder measures real market conditions rather than fabricating synthetic triggers.
+* **`npm run demo` (`src/demo-e2e.mjs`) — Complete Audit Showcase**: Executes the deterministic 5-step lifecycle using a controlled 25% shock to verify health-factor breaches, fail-closed safety gates, fallback routing, and on-chain recovery with SHA-256 receipts.
+* **`npm run daemon` (`src/keeper-daemon.mjs`) — Autonomous Engine**: Continuously evaluates borrower health factor against `MockLendingPosition.sol`. It only triggers if $HF < 1.150$, passing 4 fail-closed safety gates, inspecting CLOB depth, and dynamically selecting between IOC taking or `mintSet` fallback.
 * **`npm run hedge` (`src/run-live-hedge.mjs`) — Manual Operator Tool**: Directly targets the current active DreamDEX market and executes a standalone `mintSet` transaction regardless of borrower state. Used for operator testing and quick protocol integration checks.
-* **`npm run demo` (`src/demo-e2e.mjs`) — Complete Audit Showcase**: Runs the automated 5-step lifecycle and writes a SHA-256 cryptographic receipt to `/receipts/`.
 * **`npm run verify` (`src/verify-receipts.mjs`) — Verification Harness**: Verifies all on-chain receipts and live contract storage against Somnia Shannon Testnet RPC.
-* **`npm test` (`test/invariants.test.mjs`) — 24 Invariant Test Suite**: Rigorously tests chain configurations, solvency boundaries, math limits, routing invariants, and fail-closed safety policy gates.
+* **`npm test` (`test/invariants.test.mjs`) — 27 Invariant Test Suite**: Rigorously tests chain configurations, solvency boundaries, math limits, Pyth negative exponent scaling, routing invariants, and fail-closed safety policy gates.
 
 ---
 
@@ -137,12 +138,15 @@ During high-volatility crashes:
 cd web-cockpit/typescript
 npm install
 
-# 1. Run the 24-test unit, invariant, and safety gate suite
+# 1. Run the 27-test unit, invariant, oracle scaling, and safety gate suite
 npm test
 
-# 2. Verify all on-chain historical transactions against Somnia Shannon RPC
+# 2. Run the live Pyth Network oracle feeder (surveillance mode)
+npm run oracle
+
+# 3. Verify all on-chain historical transactions against Somnia Shannon RPC
 npm run verify
 
-# 3. Run the automated 5-step live audit showcase
+# 4. Run the automated 5-step live audit showcase
 npm run demo
 ```

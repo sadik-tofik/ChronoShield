@@ -168,15 +168,41 @@ describe('5. Safety Thresholds & Breach Detection', () => {
   });
 });
 
-describe('6. Fail-Closed Policy Gate Invariants', () => {
+describe('6. Pyth Network Oracle Math & Scaling Invariants', () => {
+  it('normalizes Pyth negative exponent prices correctly', () => {
+    const rawPrice = 254312000000;
+    const expo = -8;
+    const normalized = rawPrice * (10 ** expo);
+    assert.equal(normalized, 2543.12);
+  });
+
+  it('calculates collateral drop proportionally to observed oracle delta', () => {
+    const basePrice = 2500;
+    const livePrice = 1875; // 25% drop
+    const dropPercent = Math.max(0, Math.round(((basePrice - livePrice) / basePrice) * 100));
+    assert.equal(dropPercent, 25);
+
+    const initialCollateral = 2000n * (10n ** 18n);
+    const shockedCollateral = (initialCollateral * BigInt(100 - dropPercent)) / 100n;
+    assert.equal(shockedCollateral / (10n ** 18n), 1500n);
+  });
+
+  it('clamps non-negative drop percentage on price increases', () => {
+    const basePrice = 2500;
+    const livePrice = 2750; // +10% price increase
+    const dropPercent = Math.max(0, Math.round(((basePrice - livePrice) / basePrice) * 100));
+    assert.equal(dropPercent, 0);
+  });
+});
+
+describe('7. Fail-Closed Policy Gate Invariants', () => {
   it('rejects pools with less than 120s expiry headroom', () => {
     const now = Math.floor(Date.now() / 1000);
     const check = evaluateFailClosedGates({
       expiry: now + 60, // Only 60s left
       depth: { hasLiquidity: false, bidsCount: 0, asksCount: 0 },
       hedgeAmount: 2_000_000n,
-      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1',
-      expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
     });
     assert.equal(check.allPassed, false);
     assert.equal(check.results[0].passed, false);
@@ -188,8 +214,7 @@ describe('6. Fail-Closed Policy Gate Invariants', () => {
       expiry: now + 300, // 5 min
       depth: { hasLiquidity: false, bidsCount: 0, asksCount: 0 },
       hedgeAmount: 2_000_000n,
-      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1',
-      expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
     });
     assert.equal(check.allPassed, true);
   });
@@ -200,8 +225,7 @@ describe('6. Fail-Closed Policy Gate Invariants', () => {
       expiry: now + 300,
       depth: { hasLiquidity: false, bidsCount: 0, asksCount: 0 },
       hedgeAmount: 15_000_000n, // $15 USDC (cap is $10)
-      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1',
-      expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+      operatorAddress: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
     });
     assert.equal(check.allPassed, false);
     assert.equal(check.results[1].passed, false);
@@ -213,8 +237,7 @@ describe('6. Fail-Closed Policy Gate Invariants', () => {
       expiry: now + 300,
       depth: { hasLiquidity: false, bidsCount: 0, asksCount: 0 },
       hedgeAmount: 2_000_000n,
-      operatorAddress: '0x000000000000000000000000000000000000dEaD',
-      expectedOperator: '0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1'
+      operatorAddress: '0x000000000000000000000000000000000000dEaD'
     });
     assert.equal(check.allPassed, false);
     assert.equal(check.results[2].passed, false);

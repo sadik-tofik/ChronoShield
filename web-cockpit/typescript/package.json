@@ -9,6 +9,7 @@
     "demo": "node src/demo-e2e.mjs",
     "verify": "node src/verify-receipts.mjs",
     "daemon": "node src/keeper-daemon.mjs",
+    "oracle": "node src/oracle-feeder.mjs",
     "shock": "node src/shock-position.mjs 25",
     "hedge": "node src/run-live-hedge.mjs",
     "docs": "node -e \"import http from 'http'; import fs from 'fs'; import path from 'path'; http.createServer((req, res) => { const file = path.resolve('../../docs/index.html'); fs.createReadStream(file).pipe(res); }).listen(8080, () => console.log('ChronoShield Docs running at http://localhost:8080'));\"",
