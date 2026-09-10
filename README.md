@@ -111,7 +111,7 @@ During high-volatility crashes:
 
 ## Execution Entry Points: Autonomous vs. Manual
 
-* **`npm run oracle` (`src/oracle-feeder.mjs`) — Live Pyth Network Oracle Feeder**: Reads live ETH/USD spot data from Pyth Network Hermes (with institutional failover) and computes real price movement against a persistent `.oracle-baseline.json`. Because live ETH/USD rarely experiences a 25% crash during a demonstration window, this will typically report an honest 0% or small delta—confirming the feeder measures real market conditions rather than fabricating synthetic triggers.
+* **`npm run oracle` (`src/oracle-feeder.mjs`) — Real-Time Oracle Surveillance Feeder**: Integrates with Pyth Network Hermes (with optional API key authentication), with transparent fallback to Coinbase/Binance when Pyth authentication is not configured in the local environment. Computes real ETH/USD price movement against a persistent `.oracle-baseline.json`. Because live ETH/USD rarely experiences a 25% crash during a demo window, this will typically report an honest 0% or small delta—confirming the feeder measures real market conditions rather than fabricating synthetic triggers.
 * **`npm run demo` (`src/demo-e2e.mjs`) — Complete Audit Showcase**: Executes the deterministic 5-step lifecycle using a controlled 25% shock to verify health-factor breaches, fail-closed safety gates, fallback routing, and on-chain recovery with SHA-256 receipts.
 * **`npm run daemon` (`src/keeper-daemon.mjs`) — Autonomous Engine**: Continuously evaluates borrower health factor against `MockLendingPosition.sol`. It only triggers if $HF < 1.150$, passing 4 fail-closed safety gates, inspecting CLOB depth, and dynamically selecting between IOC taking or `mintSet` fallback.
 * **`npm run hedge` (`src/run-live-hedge.mjs`) — Manual Operator Tool**: Directly targets the current active DreamDEX market and executes a standalone `mintSet` transaction regardless of borrower state. Used for operator testing and quick protocol integration checks.
@@ -141,7 +141,7 @@ npm install
 # 1. Run the 27-test unit, invariant, oracle scaling, and safety gate suite
 npm test
 
-# 2. Run the live Pyth Network oracle feeder (surveillance mode)
+# 2. Run the live oracle surveillance feeder (Pyth Hermes with Coinbase/Binance fallback)
 npm run oracle
 
 # 3. Verify all on-chain historical transactions against Somnia Shannon RPC

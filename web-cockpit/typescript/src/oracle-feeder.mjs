@@ -81,7 +81,7 @@ function loadOrSetBaseline(currentPrice) {
 async function runFeeder() {
   console.log("=========================================================================");
   console.log("  CHRONOSHIELD LIVE ORACLE FEEDER");
-  console.log("  Primary: Pyth Network Hermes | Fallover: Institutional Spot APIs");
+  console.log("  Primary: Pyth Hermes (with optional API key) | Fallback: Coinbase / Binance");
   console.log(`  Target Adapter: ${CONTRACTS.LENDING_ADAPTER}`);
   console.log("=========================================================================\n");
 
