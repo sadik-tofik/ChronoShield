@@ -1318,36 +1318,95 @@ export default function App() {
 
               {docsTab === 'architecture' && (
                 <div className="space-y-4 text-xs font-mono leading-relaxed">
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 font-mono text-[11px] overflow-x-auto">
-                    <pre className="text-slate-700 dark:text-zinc-300">
-{`[Lending Market Listener]
-        │ (Health Factor < 1.15)
-        ▼
-[ChronoShield Keeper Daemon]
-        │
-        ├── Step 1: Discover active short-cadence DreamDEX pool
-        │
-        ├── Step 2: Attempt CLOB Taker fill (BUY_NO IOC)
-        │     └── If orderbook empty (ImmediateOrCancelNoFill)
-        │
-        ├── Step 3: Atomic Fallback -> mintSet(pool, amount)
-        │     └── Delivers 100% of DOWN hedge tokens to wallet
-        │
-        └── Step 4: Oracle Resolution Listener (mo.isResolved)
-              └── Autonomous redeem() claims tUSDC to vault`}
-                    </pre>
+                  <div className="p-4 rounded-xl bg-cyan-950/30 border border-cyan-500/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-cyan-300 text-sm font-sans">Core Architectural Thesis</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-900/60 text-cyan-400 font-bold">SOMNIA 50312</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      ChronoShield is an autonomous anti-liquidation protocol that couples on-chain borrower solvency with DreamDEX binary event markets. When adverse volatility drives Health Factor below <strong>1.150</strong>, the keeper locks collateral to secure guaranteed downside protection before liquidators can seize assets.
+                    </p>
                   </div>
 
-                  <h4 className="font-bold text-sm text-slate-900 dark:text-white font-sans">
-                    Somnia Shannon Testnet References
+                  {/* 5-Step Visual Flow */}
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Autonomous Anti-Liquidation Pipeline
+                    </span>
+                    <div className="space-y-2 text-[11px]">
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-start gap-2.5">
+                        <span className="px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-400 font-bold shrink-0">1</span>
+                        <div>
+                          <strong className="text-slate-900 dark:text-white">Solvency &amp; Oracle Telemetry:</strong>
+                          <p className="text-slate-500 dark:text-zinc-400 mt-0.5">
+                            Pyth Hermes streams ETH/USD. Position adapter (<code className="text-cyan-600 dark:text-cyan-400">0x728b...6343</code>) detects collateral drop. HF drops 1.360 &rarr; 1.020 (Hazard Active).
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-start gap-2.5">
+                        <span className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 font-bold shrink-0">2</span>
+                        <div>
+                          <strong className="text-slate-900 dark:text-white">4 Fail-Closed Policy Gates:</strong>
+                          <p className="text-slate-500 dark:text-zinc-400 mt-0.5">
+                            Evaluates Expiry Headroom (&ge;120s), Budget Cap (&le;$10 USDC), Whitelisted Caller Signature, and Route Sanity prior to spending any capital.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-start gap-2.5">
+                        <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-400 font-bold shrink-0">3</span>
+                        <div>
+                          <strong className="text-slate-900 dark:text-white">Dynamic Market Discovery:</strong>
+                          <p className="text-slate-500 dark:text-zinc-400 mt-0.5">
+                            Queries DreamDEX binary pool (<code className="text-purple-600 dark:text-purple-400">0x5397...3D62</code>) on Somnia Shannon and inspects CLOB orderbook depth.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-500/40 flex items-start gap-2.5">
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 font-bold shrink-0">4</span>
+                        <div>
+                          <strong className="text-emerald-800 dark:text-emerald-300">Dual-Route Fallback (The Breakthrough):</strong>
+                          <p className="text-slate-600 dark:text-emerald-400/90 mt-0.5">
+                            If orderbook is dry (0 asks), keeper bypasses CLOB and invokes protocol-level <code className="font-bold text-slate-900 dark:text-white">mintSet()</code>. 1 USDC locks = 1 UP + 1 DOWN, securing guaranteed coverage with 0 slippage.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-start gap-2.5">
+                        <span className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400 font-bold shrink-0">5</span>
+                        <div>
+                          <strong className="text-slate-900 dark:text-white">Solvency Restoration &amp; Sealed Proof:</strong>
+                          <p className="text-slate-500 dark:text-zinc-400 mt-0.5">
+                            DOWN contracts offset loss. Position reset to baseline (HF 1.360) and cryptographic SHA-256 seal appended to <code className="text-rose-600 dark:text-rose-400">EVIDENCE.md</code>.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trigger Full Architecture Modal */}
+                  <button
+                    onClick={() => {
+                      sounds.playClick();
+                      setIsDocsOpen(false);
+                      setIsArchModalOpen(true);
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs font-mono transition text-center shadow-md cursor-pointer"
+                  >
+                    Open Interactive Architecture Visualizer Modal &rarr;
+                  </button>
+
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white font-sans pt-2">
+                    Verified Somnia Shannon Testnet Deployments
                   </h4>
-                  <ul className="space-y-1.5 text-slate-600 dark:text-zinc-400">
-                    <li>• <strong>Chain ID:</strong> 50312 (Somnia Shannon Testnet)</li>
-                    <li>• <strong>RPC URL:</strong> <a href="https://dream-rpc.somnia.network" target="_blank" rel="noreferrer" className="text-cyan-600 dark:text-cyan-400 underline">https://dream-rpc.somnia.network</a></li>
-                    <li>• <strong>WSS URL:</strong> wss://api.infra.testnet.somnia.network/ws</li>
-                    <li>• <strong>Operator Address:</strong> 0x9C488445198E074Cf355F0B3ad48dD7c18c6EDE1</li>
-                    <li>• <strong>Collateral Asset:</strong> 6-decimal Testnet USDC (tUSDC: 0x70a8...5d8E)</li>
-                    <li>• <strong>Specification:</strong> <a href="/spec.json" target="_blank" rel="noreferrer" className="text-rose-600 dark:text-rose-400 underline">/spec.json</a></li>
+                  <ul className="space-y-1.5 text-slate-600 dark:text-zinc-400 text-[11px]">
+                    <li>• <strong>Solvency Adapter:</strong> <a href="https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343" target="_blank" rel="noreferrer" className="text-cyan-600 dark:text-cyan-400 underline">0x728b9579edec0e8ef5422f2980c302d5bd266343</a> (Block #484098396)</li>
+                    <li>• <strong>Live Shock Tx:</strong> <a href="https://shannon-explorer.somnia.network/tx/0x8c12ff6acde6bf9124f130d18ca200958d0d46deb91b07cc559781a22795b924" target="_blank" rel="noreferrer" className="text-cyan-600 dark:text-cyan-400 underline">0x8c12ff6acde6...</a> (Block #484162912)</li>
+                    <li>• <strong>mintSet Hedge Tx:</strong> <a href="https://shannon-explorer.somnia.network/tx/0xa476337c724b5f18d4b2e2cddc9e57783a19755c2b27e302b469ca89ef77cec6" target="_blank" rel="noreferrer" className="text-cyan-600 dark:text-cyan-400 underline">0xa476337c724b...</a> (Block #484163041)</li>
+                    <li>• <strong>Position Reset Tx:</strong> <a href="https://shannon-explorer.somnia.network/tx/0x02cedaf7ad233e9c4d99ca02c49a3b3c7113e3c97c4688e3e15f3663ae9e1e45" target="_blank" rel="noreferrer" className="text-cyan-600 dark:text-cyan-400 underline">0x02cedaf7ad23...</a> (Block #484163113)</li>
+                    <li>• <strong>Collateral Redeem Tx:</strong> <a href="https://shannon-explorer.somnia.network/tx/0x42b8df2bd8faa988a185af926217b2d18cb9bf9759e58711256bd9647a717a73" target="_blank" rel="noreferrer" className="text-cyan-600 dark:text-cyan-400 underline">0x42b8df2bd8fa...</a> (Block #481305363)</li>
                   </ul>
                 </div>
               )}
@@ -1355,41 +1414,58 @@ export default function App() {
               {docsTab === 'reproduction' && (
                 <div className="space-y-4 text-xs font-mono leading-relaxed">
                   <p className="text-slate-600 dark:text-zinc-400">
-                    Execute the autonomous keeper daemon on Shannon testnet in under 60 seconds:
+                    Verify the entire ChronoShield lifecycle from terminal in under 60 seconds:
                   </p>
 
                   <div className="p-4 rounded-xl bg-slate-950 text-zinc-200 border border-zinc-800 font-mono text-[11px] overflow-x-auto space-y-2">
                     <p className="text-zinc-400"># 1. Navigate to typescript workspace</p>
                     <p className="text-emerald-400">cd web-cockpit/typescript</p>
-                    <p className="text-zinc-400"># 2. Run the keeper daemon</p>
-                    <p className="text-emerald-400">npx tsx src/keeper-daemon.mjs</p>
-                    <p className="text-zinc-400"># 3. Check settlement and balances</p>
-                    <p className="text-emerald-400">npx tsx src/check-balance.mjs</p>
+                    <p className="text-zinc-400"># 2. Run deterministic audited end-to-end demo</p>
+                    <p className="text-emerald-400">npm run demo</p>
+                    <p className="text-zinc-400"># 3. Verify on-chain tape directly against Somnia RPC</p>
+                    <p className="text-emerald-400">npm run verify</p>
+                    <p className="text-zinc-400"># 4. Run 27-test invariant suite (7 test suites)</p>
+                    <p className="text-emerald-400">npm test</p>
+                    <p className="text-zinc-400"># 5. Run live Pyth Network Hermes surveillance feeder</p>
+                    <p className="text-emerald-400">npm run oracle</p>
                   </div>
 
-                  <p className="text-slate-600 dark:text-zinc-400">
-                    The daemon detects the simulated health factor drop to 1.020, discovers the active 5-minute pool, executes the complete-set fallback mint, and polls until settlement recovery completes.
-                  </p>
+                  <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-[11px] text-emerald-400">
+                    ✔ All 27 tests and on-chain verification passes without requiring local chain fork or mocking.
+                  </div>
                 </div>
               )}
 
               {docsTab === 'security' && (
                 <div className="space-y-4 text-xs font-mono leading-relaxed">
                   <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-2">
+                    <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                      <span>4 Institutional Fail-Closed Policy Gates</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">ENFORCED</span>
+                    </div>
+                    <ul className="text-slate-600 dark:text-zinc-400 space-y-1 text-[11px]">
+                      <li>• <strong>Gate 1 (Expiry Headroom):</strong> Market expiration must be &ge; 120s away to ensure fill viability.</li>
+                      <li>• <strong>Gate 2 (Budget Cap):</strong> Total hedge allocation capped at $10.00 USDC per event.</li>
+                      <li>• <strong>Gate 3 (Operator Auth):</strong> Operator signature strictly validated against authorized registry.</li>
+                      <li>• <strong>Gate 4 (Route Sanity):</strong> Pools with invalid prices or broken contracts automatically rejected.</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-2">
                     <div className="font-bold text-slate-900 dark:text-white">
                       Complete Set Conservation Theorem
                     </div>
-                    <p className="text-slate-600 dark:text-zinc-400">
+                    <p className="text-slate-600 dark:text-zinc-400 text-[11px]">
                       1 collateral token (1.00 tUSDC) always mints exactly 1 UP and 1 DOWN contract. Since V(UP) + V(DOWN) = 1.00 USDC at all times, minting complete sets carries zero uncollateralized protocol risk.
                     </p>
                   </div>
 
                   <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-2">
                     <div className="font-bold text-slate-900 dark:text-white">
-                      Integer Tick-Math Invariant
+                      Integer Tick-Math &amp; Scaling Invariant
                     </div>
-                    <p className="text-slate-600 dark:text-zinc-400">
-                      Floating-point math is strictly forbidden on the execution hot-path. All contract sizes and prices snap to integer lot grids ($10^6$ units for tUSDC) preventing contract reverts.
+                    <p className="text-slate-600 dark:text-zinc-400 text-[11px]">
+                      Floating-point math is strictly forbidden on the execution hot-path. All contract sizes and prices snap to integer lot grids (10^6 units for tUSDC, 10^18 for STT) preventing contract reverts.
                     </p>
                   </div>
                 </div>

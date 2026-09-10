@@ -165,22 +165,165 @@
         </p>
       </section>
 
-      <!-- Section 2: Architecture Diagram (Image + Interactive SVG) -->
-      <section id="architecture-diagram" class="space-y-4">
+      <!-- Section 2: Architecture Diagram (Comprehensive End-to-End System) -->
+      <section id="architecture-diagram" class="space-y-6">
         <div class="flex items-center justify-between border-b border-[#1e293b] pb-2">
-          <h2 class="text-2xl font-bold text-white tracking-tight">System Architecture</h2>
-          <span class="text-xs font-mono text-cyan-400">HUD Visualization</span>
+          <div>
+            <h2 class="text-2xl font-bold text-white tracking-tight">System Architecture &amp; Execution Pipeline</h2>
+            <p class="text-xs text-slate-400 font-mono mt-1">End-to-end data flow between on-chain solvency monitoring, keeper intelligence, and DreamDEX event contracts</p>
+          </div>
+          <span class="text-xs font-mono px-2.5 py-1 rounded bg-cyan-950 border border-cyan-800 text-cyan-400 font-bold">SOMNIA SHANNON (50312)</span>
         </div>
+
         <p class="text-slate-300 text-sm leading-relaxed">
-          High-tech overview showing the three core operational nodes: the On-Chain Solvency Adapter, the Autonomous Keeper Decision Engine, and the DreamDEX Binary Event Derivative Layer.
+          ChronoShield operates as an autonomous guardian bridge that couples real-time lending solvency monitoring with DreamDEX binary event derivative markets. When market volatility threatens a borrower's collateral, ChronoShield executes programmatic downside hedging to eliminate bad debt before liquidators can strike.
         </p>
 
-        <!-- Generated High-Tech Architecture Image -->
+        <!-- 5-Phase Interactive Visual Pipeline -->
+        <div class="space-y-3">
+          <div class="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-between">
+            <span>5-Phase Autonomous Anti-Liquidation Lifecycle</span>
+            <span class="text-cyan-400 text-[11px]">Deterministic &bull; Fail-Closed &bull; Verified</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-3 font-mono text-xs">
+            <!-- Phase 1 -->
+            <div class="p-4 rounded-2xl bg-[#111827] border border-cyan-500/30 space-y-2 relative overflow-hidden shadow-lg">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-400 border border-cyan-800">PHASE 1</span>
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              </div>
+              <div class="font-bold text-white text-sm">Solvency Surveillance</div>
+              <p class="text-slate-400 text-[11px] leading-relaxed">
+                Pyth Hermes oracle streams live ETH/USD prices. <code class="text-cyan-300">MockLendingPosition.sol</code> tracks Collateral ($2000) &amp; Debt ($1250). When price drops 25%, HF breaches the <strong class="text-white">1.150</strong> safety threshold.
+              </p>
+              <div class="text-[10px] text-cyan-400 font-semibold pt-1 border-t border-slate-800">
+                Formula: HF = (Col &times; 0.85) / Debt
+              </div>
+            </div>
+
+            <!-- Phase 2 -->
+            <div class="p-4 rounded-2xl bg-[#111827] border border-amber-500/30 space-y-2 shadow-lg">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-800">PHASE 2</span>
+                <span class="text-[10px] text-amber-400 font-bold">4/4 GATES</span>
+              </div>
+              <div class="font-bold text-white text-sm">Policy Risk Gates</div>
+              <p class="text-slate-400 text-[11px] leading-relaxed">
+                Before spending capital, the keeper evaluates 4 institutional risk gates: Expiry Headroom (&ge;120s), Budget Cap (&le;$10 USDC), Whitelisted Caller Signature, and Route Sanity.
+              </p>
+              <div class="text-[10px] text-amber-400 font-semibold pt-1 border-t border-slate-800">
+                Rule: 100% Fail-Closed Policy
+              </div>
+            </div>
+
+            <!-- Phase 3 -->
+            <div class="p-4 rounded-2xl bg-[#111827] border border-purple-500/30 space-y-2 shadow-lg">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-400 border border-purple-800">PHASE 3</span>
+                <span class="text-[10px] text-purple-400 font-bold">CLOB SCAN</span>
+              </div>
+              <div class="font-bold text-white text-sm">Dynamic Discovery</div>
+              <p class="text-slate-400 text-[11px] leading-relaxed">
+                Daemon discovers active DreamDEX binary pool (e.g. <code class="text-purple-300">0x5397...3D62</code>) on Somnia Shannon and inspects Central Limit Orderbook depth (bids vs asks).
+              </p>
+              <div class="text-[10px] text-purple-400 font-semibold pt-1 border-t border-slate-800">
+                Sensor: Depth = 0 Asks (Drought)
+              </div>
+            </div>
+
+            <!-- Phase 4 -->
+            <div class="p-4 rounded-2xl bg-[#111827] border border-emerald-500/50 space-y-2 shadow-xl shadow-emerald-950/20 bg-gradient-to-b from-[#111827] to-[#062c1e]/40">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">PHASE 4</span>
+                <span class="text-[10px] text-emerald-400 font-bold">CORE INNOVATION</span>
+              </div>
+              <div class="font-bold text-white text-sm">Dual-Route Execution</div>
+              <p class="text-slate-400 text-[11px] leading-relaxed">
+                Orderbook empty &rarr; daemon invokes protocol <code class="text-emerald-300 font-bold">mintSet()</code>, locking $2.00 USDC to mint guaranteed 1:1 complete sets, bypassing orderbook drought with 0 slippage.
+              </p>
+              <div class="text-[10px] text-emerald-300 font-semibold pt-1 border-t border-slate-800">
+                100% Deterministic Fill Rate
+              </div>
+            </div>
+
+            <!-- Phase 5 -->
+            <div class="p-4 rounded-2xl bg-[#111827] border border-rose-500/30 space-y-2 shadow-lg">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-800">PHASE 5</span>
+                <span class="text-[10px] text-rose-400 font-bold">SEALED</span>
+              </div>
+              <div class="font-bold text-white text-sm">Solvency Restitution</div>
+              <p class="text-slate-400 text-[11px] leading-relaxed">
+                DOWN tokens hedge position against liquidation haircut. Position is restored to baseline (HF 1.360) and verified execution receipt is sealed with SHA-256 in <code class="text-rose-300">EVIDENCE.md</code>.
+              </p>
+              <div class="text-[10px] text-rose-400 font-semibold pt-1 border-t border-slate-800">
+                Receipt: SHA-256 2a588f77...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual High-Tech Architecture Image with Lightbox Trigger -->
         <div class="rounded-2xl overflow-hidden border border-[#1e293b] bg-[#111827] shadow-2xl relative group">
-          <img src="./assets/architecture.png" alt="ChronoShield Architecture Diagram" class="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-300" />
-          <div class="p-3 bg-[#0b101c] border-t border-[#1e293b] flex items-center justify-between text-xs font-mono text-slate-400">
-            <span>Fig 1.1 — ChronoShield Autonomous Dual-Layer Architecture</span>
-            <span class="text-cyan-400">100% On-Chain Live Routing</span>
+          <img src="./assets/architecture.png" alt="ChronoShield Architecture Diagram" class="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-300 cursor-pointer" onclick="openDiagramModal()" />
+          <div class="p-3.5 bg-[#0b101c] border-t border-[#1e293b] flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
+            <span class="flex items-center gap-1.5">
+              <strong class="text-white">Fig 1.1</strong> &bull; ChronoShield Autonomous Dual-Layer Architecture Schematic
+            </span>
+            <button onclick="openDiagramModal()" class="text-cyan-400 hover:text-cyan-300 underline cursor-pointer">Click to View Fullscreen</button>
+          </div>
+        </div>
+
+        <!-- Data Flow & Component Mapping Table -->
+        <div class="rounded-2xl border border-[#1e293b] bg-[#111827] overflow-hidden shadow-xl">
+          <div class="bg-[#0b101c] px-5 py-3 border-b border-[#1e293b] flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white tracking-wide font-mono">System Component &amp; Interface Mapping</h3>
+            <span class="text-xs font-mono text-slate-500">Verified Somnia Shannon Deployments</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left font-mono text-xs">
+              <thead class="bg-[#070a14] border-b border-[#1e293b] text-slate-400 text-[11px]">
+                <tr>
+                  <th class="p-3.5">Component</th>
+                  <th class="p-3.5">Role &amp; Logic</th>
+                  <th class="p-3.5">On-Chain Identifier / Source</th>
+                  <th class="p-3.5">Invariant / Safety Guarantee</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#1e293b]/70 text-slate-300">
+                <tr class="hover:bg-[#1f293d]/30">
+                  <td class="p-3.5 font-bold text-cyan-400">MockLendingPosition.sol</td>
+                  <td class="p-3.5">Solvency position adapter tracking collateral, debt, and liquidation threshold</td>
+                  <td class="p-3.5 text-[11px]"><a href="https://shannon-explorer.somnia.network/address/0x728b9579edec0e8ef5422f2980c302d5bd266343" target="_blank" class="text-cyan-300 underline">0x728b...6343</a> (Block #484098396)</td>
+                  <td class="p-3.5 text-emerald-400 font-semibold">HF = (Collateral &times; 0.85) / Debt</td>
+                </tr>
+                <tr class="hover:bg-[#1f293d]/30">
+                  <td class="p-3.5 font-bold text-amber-400">ChronoShield Keeper</td>
+                  <td class="p-3.5">Autonomous off-chain daemon with 4 fail-closed institutional policy gates</td>
+                  <td class="p-3.5 text-[11px]"><code class="text-slate-200">src/keeper-daemon.mjs</code></td>
+                  <td class="p-3.5 text-emerald-400 font-semibold">4/4 Gates must PASS before spending</td>
+                </tr>
+                <tr class="hover:bg-[#1f293d]/30">
+                  <td class="p-3.5 font-bold text-purple-400">Pyth Hermes Feeder</td>
+                  <td class="p-3.5">Live ETH/USD price ingestion with persistent baseline &amp; failover</td>
+                  <td class="p-3.5 text-[11px]"><code class="text-slate-200">src/oracle-feeder.mjs</code></td>
+                  <td class="p-3.5 text-emerald-400 font-semibold">Negative exponent scaling normalized</td>
+                </tr>
+                <tr class="hover:bg-[#1f293d]/30">
+                  <td class="p-3.5 font-bold text-emerald-400">DreamDEX Protocol</td>
+                  <td class="p-3.5">Binary event markets providing CLOB orderbook &amp; <code class="text-emerald-300">mintSet()</code></td>
+                  <td class="p-3.5 text-[11px]">Pool <code class="text-emerald-300">0x5397...3D62</code> (Market #0x18c5a)</td>
+                  <td class="p-3.5 text-emerald-400 font-semibold">1 USDC locks = 1 UP + 1 DOWN</td>
+                </tr>
+                <tr class="hover:bg-[#1f293d]/30">
+                  <td class="p-3.5 font-bold text-rose-400">Evidence Audit Tape</td>
+                  <td class="p-3.5">Chained cryptographic evidence records appended with SHA-256 seal</td>
+                  <td class="p-3.5 text-[11px]"><code class="text-slate-200">EVIDENCE.md</code> &amp; <code class="text-slate-200">receipts/*.json</code></td>
+                  <td class="p-3.5 text-emerald-400 font-semibold">100% verified against Somnia Shannon RPC</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -360,6 +503,19 @@
     <p class="text-[11px] text-slate-600">Chain ID 50312 &bull; RPC: https://dream-rpc.somnia.network</p>
   </footer>
 
+  <!-- Diagram Lightbox Modal -->
+  <div id="diagram-modal" class="fixed inset-0 z-50 bg-black/90 hidden backdrop-blur-md flex items-center justify-center p-4">
+    <div class="relative max-w-5xl w-full flex flex-col items-center">
+      <button onclick="closeDiagramModal()" class="absolute -top-12 right-0 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-mono cursor-pointer">
+        Close &times; (Esc)
+      </button>
+      <img src="./assets/architecture.png" alt="ChronoShield Architecture Diagram Fullscreen" class="max-h-[85vh] max-w-full object-contain rounded-xl border border-slate-800 shadow-2xl" />
+      <div class="mt-3 text-xs font-mono text-slate-400 text-center">
+        Fig 1.1 &bull; ChronoShield Dual-Layer Autonomous Architecture Schematic
+      </div>
+    </div>
+  </div>
+
   <script>
     // Mobile Drawer Toggle
     const toggleBtn = document.getElementById('mobile-menu-toggle');
@@ -374,6 +530,20 @@
         sidebar.classList.toggle('w-72');
       });
     }
+
+    function openDiagramModal() {
+      const m = document.getElementById('diagram-modal');
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeDiagramModal() {
+      const m = document.getElementById('diagram-modal');
+      if (m) m.classList.add('hidden');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDiagramModal();
+    });
   </script>
 </body>
 </html>
